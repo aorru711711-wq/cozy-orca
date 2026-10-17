@@ -23,11 +23,11 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 const settingsFile = path.join(dataDir, 'settings.json');
 const voyageFile = path.join(dataDir, 'voyage.json');
 const VOYAGE_SAVE_MS = 15000;
-let settings = { scale: 2, reducedMotion: false, position: null };
+let settings = { scale: 2, reducedMotion: false, showText: true, position: null };
 try {
   const saved = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
   settings = { scale: [2, 3, 4].includes(saved.scale) ? saved.scale : 2,
-    reducedMotion: saved.reducedMotion === true, position: saved.position || null };
+    reducedMotion: saved.reducedMotion === true, showText: saved.showText !== false, position: saved.position || null };
 } catch { /* Missing or damaged settings fall back to safe defaults. */ }
 let win, tray, poller, saveTimer, voyageTimer;
 let voyageDirty = false;
@@ -113,7 +113,7 @@ function totalOf(value) {
   if (!Number.isInteger(value) || value < 0) return null;
   return value;
 }
-function sanitizeDisplay(snapshot, reducedMotion) {
+function sanitizeDisplay(snapshot, reducedMotion, showText = true) {
   // Agent prompts, tool inputs, task specs, and raw CLI responses never cross this boundary.
   const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
   const kinds = ['working', 'waiting', 'paused', 'idle', 'finished', 'disconnected', 'unavailable'];
@@ -126,6 +126,7 @@ function sanitizeDisplay(snapshot, reducedMotion) {
     hasError: source.hasError === true,
     glowUntil: Number.isFinite(source.glowUntil) ? source.glowUntil : 0,
     reducedMotion: reducedMotion === true,
+    showText: showText !== false,
     crewCount: countOf(source.crewCount),
     sailingMs: Number.isFinite(source.sailingMs) && source.sailingMs >= 0 ? source.sailingMs : 0,
     completedCount: countOf(source.completedCount),
@@ -148,7 +149,7 @@ function applyVoyage(next) {
 }
 function sendDisplay() {
   if (!win || win.isDestroyed()) return;
-  win.webContents.send('display', sanitizeDisplay(status, settings.reducedMotion));
+  win.webContents.send('display', sanitizeDisplay(status, settings.reducedMotion, settings.showText));
   tray?.setToolTip(`Cozy Orca — ${typeof status.label === 'string' ? status.label : 'Cozy Orca'}`);
 }
 function position(reset = false) {
@@ -167,6 +168,8 @@ function menuTemplate() {
       type: 'radio', checked: settings.scale === scale, click() { settings.scale = scale; position(); } })) },
     { label: 'Reduced motion', type: 'checkbox', checked: settings.reducedMotion,
       click(item) { settings.reducedMotion = item.checked; persist(); sendDisplay(); } },
+    { label: 'Show status text', type: 'checkbox', checked: settings.showText,
+      click(item) { settings.showText = item.checked; persist(); sendDisplay(); } },
     { label: 'Reset to bottom-right', click: () => { position(true); show(); } },
     { type: 'separator' },
     { label: 'Reload', click() { app.relaunch(); app.quit(); } },

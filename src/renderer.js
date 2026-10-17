@@ -25,6 +25,7 @@ function normalizeDisplay(next) {
     hasError: state.hasError === true,
     glowUntil: Number.isFinite(state.glowUntil) ? state.glowUntil : 0,
     reducedMotion: state.reducedMotion === true,
+    showText: state.showText !== false,
     crewCount: countOf(state.crewCount),
     sailingMs: Number.isFinite(state.sailingMs) && state.sailingMs >= 0 ? state.sailingMs : 0,
     completedCount: countOf(state.completedCount),
@@ -91,6 +92,7 @@ function publish() {
   document.body.dataset.kind = display.kind;
   document.body.dataset.attention = String(Boolean(display.needsInput));
   document.body.dataset.error = String(Boolean(display.hasError));
+  document.body.dataset.text = display.showText === false ? 'off' : 'on';
   const text = pillText(display, readSailing());
   const label = document.getElementById('label');
   if (label.textContent !== text) label.textContent = text;

@@ -18,3 +18,5 @@ body[data-error="true"] #dot { background: #e09898; }
   font: bold 20px/15px 'Segoe UI', system-ui, sans-serif; opacity: 0; cursor: pointer; }
 #scene:hover #menu, #menu:focus-visible { opacity: 1; }
 #menu:focus-visible { outline: 1px solid #ffe3a8; }
+
+body[data-text="off"] #status { display: none; }

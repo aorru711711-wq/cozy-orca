@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const DISPLAY_FIELDS = [
-  'kind', 'label', 'reason', 'needsInput', 'hasError', 'glowUntil', 'reducedMotion',
+  'kind', 'label', 'reason', 'needsInput', 'hasError', 'glowUntil', 'reducedMotion', 'showText',
   'crewCount', 'sailingMs', 'completedCount', 'totalCount', 'remainingCount',
   'completionSerial', 'completionAt'
 ];
