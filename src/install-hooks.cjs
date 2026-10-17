@@ -5,23 +5,29 @@ const path = require('node:path');
 const CLAUDE_EVENTS = ['UserPromptSubmit', 'PermissionRequest', 'Notification', 'Stop', 'StopFailure', 'SessionEnd'];
 const CODEX_EVENTS = ['UserPromptSubmit', 'PermissionRequest', 'Stop', 'SessionEnd', 'Interrupt'];
 const ANTIGRAVITY_FLAT = ['PreInvocation', 'PostInvocation', 'Stop'];
-const ANTIGRAVITY_NESTED = ['PreToolUse', 'PostToolUse'];
+// Do not install Antigravity PreToolUse/PostToolUse hooks: a failing command blocks every tool call.
+const ANTIGRAVITY_NESTED = [];
 const ANTIGRAVITY_PACK = 'cozy-orca-ship';
 
 function quoteCmd(value) {
   return `"${String(value).replace(/"/g, '\\"')}"`;
 }
 
-function hookCommand(source, nodePath = process.execPath, scriptPath = path.join(__dirname, 'ship-hook.cjs'), event = '') {
+function hookCommand(source, nodePath = process.execPath, scriptPath = path.join(__dirname, 'ship-hook.cjs'), event = '', style = 'default') {
+  if (style === 'antigravity-win') {
+    let command = `cmd /c ""${nodePath}" "${scriptPath}" --source ${source}`;
+    if (event) command += ` --event ${event}`;
+    return `${command}"`;
+  }
   let command = `${quoteCmd(nodePath)} ${quoteCmd(scriptPath)} --source ${quoteCmd(source)}`;
   if (event) command += ` --event ${quoteCmd(event)}`;
   return command;
 }
 
 function isOurs(hook, source) {
-  return Boolean(hook && typeof hook.command === 'string'
-    && hook.command.includes('ship-hook.cjs')
-    && hook.command.includes(`--source ${quoteCmd(source)}`));
+  if (!hook || typeof hook.command !== 'string' || !hook.command.includes('ship-hook.cjs')) return false;
+  return hook.command.includes(`--source ${quoteCmd(source)}`)
+    || hook.command.includes(`--source ${source}`);
 }
 
 function handler(command) {
@@ -133,12 +139,15 @@ function editAntigravityPack(config, source, remove, nodePath, scriptPath) {
     return next;
   }
   const pack = { ...(config[ANTIGRAVITY_PACK] || {}) };
+  delete pack.PreToolUse;
+  delete pack.PostToolUse;
+  const style = process.platform === 'win32' ? 'antigravity-win' : 'default';
   for (const event of ANTIGRAVITY_FLAT) {
-    const command = hookCommand(source, nodePath, scriptPath, event);
+    const command = hookCommand(source, nodePath, scriptPath, event, style);
     pack[event] = ensureFlat(pack[event], source, command);
   }
   for (const event of ANTIGRAVITY_NESTED) {
-    const command = hookCommand(source, nodePath, scriptPath, event);
+    const command = hookCommand(source, nodePath, scriptPath, event, style);
     pack[event] = ensureNested(pack[event], source, command);
   }
   next[ANTIGRAVITY_PACK] = pack;

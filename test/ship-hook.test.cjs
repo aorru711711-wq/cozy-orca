@@ -96,9 +96,9 @@ test('Antigravity install keeps orca-status and adds MCP', () => {
   const saved = JSON.parse(fs.readFileSync(hooks, 'utf8'));
   assert.equal(saved['orca-status'].Stop[0].command, 'orca-hook.cmd');
   assert.equal(saved['cozy-orca-ship'].PreInvocation.length, 1);
-  assert.ok(saved['cozy-orca-ship'].PreInvocation[0].command.includes('--event "PreInvocation"'));
-  assert.equal(saved['cozy-orca-ship'].PreToolUse[0].matcher, '*');
-  assert.equal(saved['cozy-orca-ship'].PreToolUse[0].hooks.length, 1);
+  assert.ok(saved['cozy-orca-ship'].PreInvocation[0].command.includes('--event'));
+  assert.ok(saved['cozy-orca-ship'].PreInvocation[0].command.includes('PreInvocation'));
+  assert.equal(saved['cozy-orca-ship'].PreToolUse, undefined);
   const servers = JSON.parse(fs.readFileSync(mcp, 'utf8'));
   assert.equal(servers.mcpServers['cozy-orca-ship'].env.COZY_SHIP_SOURCE, 'Antigravity');
   installAntigravityHooks({ file: hooks, remove: true });
