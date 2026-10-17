@@ -5,7 +5,7 @@ const path = require('node:path');
 
 test('the Pi extension listens for the events that drive the ship', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'extensions', 'pi-cozy-orca.ts'), 'utf8');
-  for (const event of ['agent_start', 'agent_end', 'session_shutdown']) assert.match(source, new RegExp(`pi\.on\("${event}"`));
+  for (const event of ['agent_start', 'agent_end', 'session_shutdown']) assert.ok(source.includes(`pi.on("${event}"`));
   assert.match(source, /source: "Pi"/);
 });
 

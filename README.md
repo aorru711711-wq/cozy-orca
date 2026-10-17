@@ -13,7 +13,7 @@
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md)
+[Download](#download) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Pi](docs/pi.md)
 
 </div>
 
