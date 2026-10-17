@@ -6,7 +6,9 @@ A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI
 
 ### In use inside Orca
 
-[▶ Watch the ship running in Orca (in-orca.mp4)](docs/showcase/in-orca.mp4)
+![Cozy Orca running in Orca](docs/showcase/in-orca.gif)
+
+[▶ Full video (in-orca.mp4)](docs/showcase/in-orca.mp4)
 
 ### Pixel art
 
