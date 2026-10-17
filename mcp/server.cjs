@@ -3,6 +3,8 @@
 const readline = require('node:readline');
 const { report, STATES } = require('../src/claude-status.cjs');
 
+const DEFAULT_SOURCE = process.env.COZY_SHIP_SOURCE || 'Claude Desktop';
+
 const TOOL = {
   name: 'ship_set_status',
   description: 'Update the Cozy Orca pixel ship. Call with state "working" when you start a task, ' +
@@ -10,9 +12,10 @@ const TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      state: { type: 'string', enum: [...STATES], description: 'What Claude is doing now.' },
+      state: { type: 'string', enum: [...STATES], description: 'What the agent is doing now.' },
       task: { type: 'string', description: 'Optional short task title.' },
-      session: { type: 'string', description: 'Optional chat id, to track several chats at once.' }
+      session: { type: 'string', description: 'Optional chat id, to track several chats at once.' },
+      source: { type: 'string', description: 'Optional agent name shown on the ship.' }
     },
     required: ['state']
   }
@@ -34,8 +37,8 @@ function handle(msg) {
   if (method === 'tools/call') {
     if (params?.name !== TOOL.name) return send({ id, error: { code: -32602, message: `Unknown tool ${params?.name}` } });
     try {
-      const { state, task, session } = params.arguments || {};
-      report({ state, task, session });
+      const { state, task, session, source } = params.arguments || {};
+      report({ state, task, session, source: source || DEFAULT_SOURCE });
       return send({ id, result: { content: [{ type: 'text', text: `Ship is now ${state}.` }] } });
     } catch (error) {
       return send({ id, result: { isError: true, content: [{ type: 'text', text: error.message }] } });

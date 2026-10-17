@@ -9,11 +9,11 @@
 <br>
 
 ![Platform: Windows, macOS, and Linux](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5b8dd6?style=flat-square)
-![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-MCP-d98a5b?style=flat-square)
+![Agents](https://img.shields.io/badge/agents-Orca%20%7C%20Claude%20%7C%20Codex%20%7C%20Antigravity%20%7C%20Pi-8a6fd1?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Pi](docs/pi.md)
+[Download](#download) · [Supported](#supported) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Claude Code, Codex, Antigravity](docs/codex-and-claude-code.md) · [Pi](docs/pi.md)
 
 </div>
 
@@ -21,7 +21,32 @@
 
 One ship, many moods: sails up while agents work, a bigger ship with more crew, lanterns at night, furled sails when resting, and rain when something fails.
 
-A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
+A quiet pixel sailboat that follows AI agent work on your machine. It reads the local Orca fleet when Orca is running, and it also follows Claude Desktop, Claude Code, Codex Desktop, the Codex CLI, Antigravity/`agy`, and Pi through hooks, MCP, or a small extension. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
+
+## Supported
+
+### Platforms
+
+| Platform | App |
+| --- | --- |
+| Windows | portable zip |
+| macOS (Apple silicon and Intel) | portable zip |
+| Linux (x64 and arm64) | portable zip |
+| Orca sidebar | plugin that draws the scene |
+
+### Agents
+
+| Agent | How the ship follows it |
+| --- | --- |
+| Orca fleet (any agent Orca tracks) | local Orca CLI |
+| Claude Desktop | MCP (`ship_set_status`) — [setup](docs/claude-desktop.md) |
+| Claude Code | hooks — [setup](docs/codex-and-claude-code.md) |
+| Codex Desktop | hooks (same file as the CLI) — [setup](docs/codex-and-claude-code.md) |
+| Codex CLI | hooks — [setup](docs/codex-and-claude-code.md) |
+| Antigravity / `agy` | hooks and MCP — [setup](docs/codex-and-claude-code.md) |
+| Pi | extension — [setup](docs/pi.md) |
+
+Several sources can sail at once. Each live session is a crew member. Orca is optional when you only use the hook, MCP, or Pi paths.
 
 ## Showcase
 
@@ -74,7 +99,7 @@ Unzip the archive anywhere. No installation or administrator access is needed.
 - **macOS.** Double-click **Launch Cozy Orca.command**. The first time, if macOS blocks it, right-click that file, choose **Open**, then **Open**. The script clears the download quarantine on `Cozy Orca.app` and opens it. The app does not show a Dock icon.
 - **Linux.** Run `./launch-cozy-orca.sh` from the unzipped folder. A normal desktop already has the GTK libraries Electron needs. The script starts the app without the setuid sandbox helper, which a portable unzip cannot install.
 
-Orca must already be running for live status. The companion looks for `orca.exe` on Windows and `orca` on macOS and Linux, on your PATH, and it reconnects automatically. To use a specific Orca executable, set `COZY_ORCA_CLI` to that native path before launching. `.cmd` wrappers are not accepted.
+For the Orca fleet path, Orca must already be running. The companion looks for `orca.exe` on Windows and `orca` on macOS and Linux, on your PATH, and it reconnects automatically. To use a specific Orca executable, set `COZY_ORCA_CLI` to that native path before launching. `.cmd` wrappers are not accepted. Claude Desktop, Claude Code, Codex, Antigravity/`agy`, and Pi can move the ship without Orca after their setup steps.
 
 Settings and temporary files are created in `data` beside the app. On macOS that folder is next to `Cozy Orca.app`, not inside the bundle. Keep `data` with the app when you move it.
 

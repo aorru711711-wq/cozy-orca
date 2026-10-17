@@ -2,7 +2,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const entry = { command: process.execPath, args: [path.resolve(__dirname, '..', 'mcp', 'server.cjs')] };
+const entry = {
+  command: process.execPath,
+  args: [path.resolve(__dirname, '..', 'mcp', 'server.cjs')],
+  env: { COZY_SHIP_SOURCE: 'Claude Desktop' }
+};
 if (process.argv.includes('--print')) {
   console.log(JSON.stringify({ mcpServers: { 'cozy-orca-ship': entry } }, null, 2));
   process.exit(0);
