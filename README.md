@@ -9,12 +9,11 @@
 <br>
 
 ![Platform: Windows, macOS, and Linux](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5b8dd6?style=flat-square)
-![Orca plugin](https://img.shields.io/badge/Orca-plugin-8a6fd1?style=flat-square)
 ![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-MCP-d98a5b?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download) · [Showcase](#showcase) · [Orca plugin](#orca-plugin-sidebar-ship-icon) · [Claude Desktop](docs/claude-desktop.md)
+[Download](#download) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md)
 
 </div>
 
@@ -151,13 +150,3 @@ Limits:
 - An empty known inventory means zero tasks in scope. The pill should omit the fraction when the total is zero or unknown. Unknown inventory must not be drawn as `✓0/0`.
 - A task refresh holds the next fleet read until it finishes, so a slow inventory delays one fleet sample. Commands never overlap.
 - Specs, prompts, results, and raw outcomes are not part of display data.
-
-## Orca plugin (sidebar ship icon)
-
-This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar. Click it to show or hide the pixel scene. The panel only draws that scene: the buttons change the picture, and it does not read agent status. The portable app is the one that follows live work. The panel has no network or process access and no capabilities.
-
-1. In Orca, enable the plugin system in settings (it is off by default).
-2. Install `https://github.com/aorru711711-wq/cozy-orca`, or for local development add this folder to `devPluginPaths`.
-3. Approve the plugin and click the ship icon.
-
-The panel is a single generated file, `panel/index.html`. After editing `src/scene.js` or `src/life/*`, run `node scripts/build-panel.cjs` and commit the result.
