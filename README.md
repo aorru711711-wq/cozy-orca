@@ -2,6 +2,20 @@
 
 A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
 
+## Showcase
+
+![Cozy Orca scenes: sailing at sunset, a multi-masted ship, night, resting, storm](docs/showcase/all.png)
+
+| Scene | What you see |
+| --- | --- |
+| ![Sunset sailing](docs/showcase/day1.png) | **Sailing at sunset.** One crew means a single-mast sloop. Waves slide past the steady hull, the sun lays a glittering path, and the pennant flutters. |
+| ![Three crew](docs/showcase/day3.png) | **More crew, bigger ship.** Two to four crew raise two square-rigged masts. Buoys show remaining work and crates on a raft show finished work. |
+| ![Moonlit night](docs/showcase/night8.png) | **Night.** Eight crew sail a three-master under a round moon, twinkling stars and a sweeping lighthouse beam. |
+| ![Resting](docs/showcase/idle2.png) | **Resting.** Sails are furled, the lantern is quiet, and the water only breathes. |
+| ![Storm](docs/showcase/storm5.png) | **Storm.** An explicit failure brings rain, grey light and a red flag. |
+
+Regenerate the images with `node scripts/render-showcase.cjs docs/showcase/all.png day1,day3,night8,idle2,storm5 3`.
+
 ## Launch the portable Windows app
 
 Keep the portable `Cozy Orca-win32-x64` folder on drive **E:**. The current package is `dist/v1.1.0/Cozy Orca-win32-x64`. Double-click **Launch Cozy Orca.cmd** inside that folder. No installation or administrator access is needed. Orca must already be running for live status; the companion reconnects automatically.
