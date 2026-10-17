@@ -351,3 +351,29 @@ test('progress badges stay readable for small and large voyage counts', () => {
   const completedBadge = { minX: 102, maxX: 117, minY: 55, maxY: 62 };
   assert.ok(air(remainingBadge, completedBadge) > 40);
 });
+
+test('idle clouds drift slower than working clouds', () => {
+  const sunlit = '#dcb1ad';
+  const time = 80;
+  const idle = paint({ kind: 'idle', sailingMs: 0 }, time).bounds(sunlit);
+  const working = paint({ kind: 'working', sailingMs: 0 }, time).bounds(sunlit);
+  const origin = paint({ kind: 'idle', sailingMs: 0 }, 0).bounds(sunlit);
+  assert.ok(idle.n > 0 && working.n > 0 && origin.n > 0);
+  assert.ok(idle.minX < origin.minX, 'idle clouds should have drifted');
+  assert.ok(working.minX < idle.minX, `working ${working.minX} should travel farther left than idle ${idle.minX}`);
+  const idleTravel = origin.minX - idle.minX;
+  const workTravel = origin.minX - working.minX;
+  assert.ok(idleTravel < workTravel * 0.6, `idle travel ${idleTravel} vs working ${workTravel}`);
+});
+
+test('storm still skips the high cloud while idle calm does not apply', () => {
+  const sunlit = '#dcb1ad';
+  const stormTone = '#6a6578';
+  const calm = paint({ kind: 'idle', sailingMs: 0, hasError: false }, 0);
+  const storm = paint({ kind: 'idle', sailingMs: 0, hasError: true }, 0);
+  assert.ok(calm.count(sunlit) > 0);
+  assert.equal(calm.count(stormTone), 0);
+  assert.ok(storm.count(stormTone) > 0);
+  assert.equal(storm.count(sunlit), 0);
+});
+
