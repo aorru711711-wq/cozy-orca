@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { configHome } = require('./platform.cjs');
 
 const STATES = new Set(['working', 'needs_input', 'done', 'failed', 'idle']);
 const STALE_MS = 30 * 60 * 1000;
@@ -8,10 +9,12 @@ const DONE_KEEP_MS = 60 * 1000;
 const MAX_TASK = 160;
 const MAX_SESSIONS = 20;
 
+function statusFile(env = process.env, platform = process.platform, homedir = os.homedir()) {
+  if (env.COZY_CLAUDE_STATUS) return env.COZY_CLAUDE_STATUS;
+  return path.join(configHome(platform, env, homedir), 'cozy-orca', 'claude-status.json');
+}
 function defaultFile() {
-  if (process.env.COZY_CLAUDE_STATUS) return process.env.COZY_CLAUDE_STATUS;
-  const base = process.env.APPDATA || path.join(os.homedir(), '.config');
-  return path.join(base, 'cozy-orca', 'claude-status.json');
+  return statusFile();
 }
 
 function cleanTask(value) {
@@ -83,4 +86,4 @@ function mergeSnapshot(base, agents) {
   };
 }
 
-module.exports = { defaultFile, report, readAgents, mergeSnapshot, STATES };
+module.exports = { defaultFile, statusFile, report, readAgents, mergeSnapshot, STATES };

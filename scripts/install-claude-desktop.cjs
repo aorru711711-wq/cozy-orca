@@ -7,8 +7,7 @@ if (process.argv.includes('--print')) {
   console.log(JSON.stringify({ mcpServers: { 'cozy-orca-ship': entry } }, null, 2));
   process.exit(0);
 }
-const file = process.env.CLAUDE_DESKTOP_CONFIG ||
-  path.join(process.env.APPDATA || '', 'Claude', 'claude_desktop_config.json');
+const file = require('../src/platform.cjs').claudeConfigFile();
 let config = {};
 try { config = JSON.parse(fs.readFileSync(file, 'utf8')); }
 catch (error) {

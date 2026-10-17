@@ -1,0 +1,33 @@
+name: macOS packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  darwin:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run package
+        env:
+          COZY_PACKAGE_TARGETS: darwin-${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cozy-Orca-darwin-${{ matrix.arch }}
+          path: dist/Cozy-Orca-*-darwin-${{ matrix.arch }}.zip
+      - name: Attach the zip to this version's release
+        run: gh release upload "v$(node -p "require('./package.json').version")" dist/Cozy-Orca-*-darwin-${{ matrix.arch }}.zip --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

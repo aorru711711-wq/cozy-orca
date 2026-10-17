@@ -5,11 +5,12 @@ const { OrcaPoller } = require('./poller.cjs');
 const { readAgents } = require('./claude-status.cjs');
 const { VoyageTracker } = require('./voyage.cjs');
 const { placeWindow } = require('./geometry.cjs');
+const { orcaExecutable, packagedDataDir } = require('./platform.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const VERIFY = process.argv.includes('--verify');
 const dataRoot = process.env.COZY_DATA_DIR || (app.isPackaged
-  ? path.join(path.dirname(process.execPath), 'data') : path.join(ROOT, 'data'));
+  ? packagedDataDir(process.execPath) : path.join(ROOT, 'data'));
 const dataDir = VERIFY ? path.join(dataRoot, 'verification') : dataRoot;
 fs.mkdirSync(dataDir, { recursive: true });
 for (const name of ['userData', 'sessionData', 'logs', 'crashDumps', 'temp']) {
@@ -172,7 +173,13 @@ function menuTemplate() {
     { label: 'Quit Cozy Orca', click: () => app.quit() }
   ];
 }
-function popup() { Menu.buildFromTemplate(menuTemplate()).popup({ window: win }); }
+let popupAt = 0;
+function popup() {
+  const now = Date.now();
+  if (now - popupAt < 400) return;
+  popupAt = now;
+  Menu.buildFromTemplate(menuTemplate()).popup({ window: win });
+}
 function trayImage() {
   // Small original sailboat drawn directly as an RGBA tray bitmap.
   const pixels = Buffer.alloc(32 * 32 * 4);
@@ -192,6 +199,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) show(); });
   app.whenReady().then(async () => {
+    if (process.platform === 'darwin' && app.dock) app.dock.hide();
     const bounds = placeWindow(settings.position, settings.scale, screen.getAllDisplays(), screen.getPrimaryDisplay());
     win = new BrowserWindow({ ...bounds, frame: false, thickFrame: false, roundedCorners: false,
       resizable: false, maximizable: false,
@@ -208,11 +216,15 @@ else {
     win.setAlwaysOnTop(true, 'screen-saver');
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', event => event.preventDefault());
-    tray = new Tray(trayImage());
-    tray.setToolTip('Cozy Orca — Connecting');
-    tray.on('click', () => { if (win.isVisible()) win.hide(); else show(); });
-    tray.on('right-click', popup);
-    win.on('close', event => { if (!quitting) { event.preventDefault(); win.hide(); } });
+    let trayOk = false;
+    try {
+      tray = new Tray(trayImage());
+      tray.setToolTip('Cozy Orca — Connecting');
+      tray.on('click', () => { if (win.isVisible()) win.hide(); else show(); });
+      tray.on('right-click', popup);
+      trayOk = true;
+    } catch (error) { console.error('Tray is unavailable:', error.message); }
+    win.on('close', event => { if (!quitting && trayOk) { event.preventDefault(); win.hide(); } });
     win.on('move', () => {
       const { x, y } = win.getBounds();
       settings.position = { x, y };
@@ -230,7 +242,7 @@ else {
       return;
     }
     show();
-    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || 'orca.exe', extraAgents: () => readAgents(),
+    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || orcaExecutable(), extraAgents: () => readAgents(),
       onStatus(next) { applyVoyage(next); sendDisplay(); } });
     poller.start();
   }).catch(error => { console.error(error); app.exit(1); });

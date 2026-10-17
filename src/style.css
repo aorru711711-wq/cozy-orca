@@ -1,4 +1,4 @@
-:root { color-scheme: dark; font-family: 'Segoe UI', sans-serif; }
+:root { color-scheme: dark; font-family: 'Segoe UI', system-ui, sans-serif; }
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #302d47; }
 #scene { position: relative; width: 100%; height: 100%; -webkit-app-region: drag; user-select: none; }
@@ -15,6 +15,6 @@ body[data-kind="finished"] #dot { background: #ffe3a8; }
 body[data-error="true"] #dot { background: #e09898; }
 #menu { -webkit-app-region: no-drag; position: absolute; right: 5px; top: 5px; border: 0; border-radius: 3px;
   width: 24px; height: 20px; padding: 0 0 7px; color: #f6dfd2; background: #302d4770;
-  font: bold 20px/15px 'Segoe UI', sans-serif; opacity: 0; cursor: pointer; }
+  font: bold 20px/15px 'Segoe UI', system-ui, sans-serif; opacity: 0; cursor: pointer; }
 #scene:hover #menu, #menu:focus-visible { opacity: 1; }
 #menu:focus-visible { outline: 1px solid #ffe3a8; }

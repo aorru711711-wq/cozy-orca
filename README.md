@@ -8,13 +8,13 @@
 
 <br>
 
-![Platform: Windows](https://img.shields.io/badge/platform-Windows-5b8dd6?style=flat-square)
+![Platform: Windows, macOS, and Linux](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5b8dd6?style=flat-square)
 ![Orca plugin](https://img.shields.io/badge/Orca-plugin-8a6fd1?style=flat-square)
 ![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-MCP-d98a5b?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download-the-windows-app) · [Showcase](#showcase) · [Orca plugin](#orca-plugin-sidebar-ship-icon) · [Claude Desktop](docs/claude-desktop.md)
+[Download](#download) · [Showcase](#showcase) · [Orca plugin](#orca-plugin-sidebar-ship-icon) · [Claude Desktop](docs/claude-desktop.md)
 
 </div>
 
@@ -57,18 +57,32 @@ Stills:
 
 Regenerate the images with `node scripts/render-showcase.cjs docs/showcase/all.png day1,day3,night8,idle2,storm5 3`.
 
-## Download the Windows app
+## Download
 
-This git repository does not contain the portable app. `Cozy Orca.exe` is larger than GitHub allows in a repository, so a clone or a source zip will not include it.
+This git repository does not contain the portable app. The executable is larger than GitHub allows in a repository, so a clone or a source zip will not include it.
 
-Download [Cozy Orca 1.2.0 for Windows](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.2.0/Cozy-Orca-1.2.0-win-x64.zip) and unzip it on any drive. Double-click **Launch Cozy Orca.cmd** inside `Cozy Orca-win32-x64`. No installation or administrator access is needed. Orca must already be running for live status, and `orca.exe` must be on your PATH. The companion reconnects automatically. To use a specific Orca executable, set `COZY_ORCA_CLI` to that native path before launching. `.cmd` wrappers are not accepted.
+| System | Download |
+| --- | --- |
+| Windows | [Cozy Orca 1.3.0 for Windows](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.3.0/Cozy-Orca-1.3.0-win32-x64.zip) |
+| macOS, Apple silicon | [Cozy Orca 1.3.0 for Apple silicon](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.3.0/Cozy-Orca-1.3.0-darwin-arm64.zip) |
+| macOS, Intel | [Cozy Orca 1.3.0 for Intel Macs](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.3.0/Cozy-Orca-1.3.0-darwin-x64.zip) |
+| Linux, 64-bit | [Cozy Orca 1.3.0 for Linux x64](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.3.0/Cozy-Orca-1.3.0-linux-x64.zip) |
+| Linux, ARM | [Cozy Orca 1.3.0 for Linux arm64](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.3.0/Cozy-Orca-1.3.0-linux-arm64.zip) |
 
-Settings and temporary files are created in `data` and `.tmp` beside the executable. Keep those folders with the app when you move it.
+Unzip the archive anywhere. No installation or administrator access is needed.
 
-- Drag the scene to move it. It starts above the taskbar in the bottom-right corner.
+- **Windows.** Double-click **Launch Cozy Orca.cmd**.
+- **macOS.** Double-click **Launch Cozy Orca.command**. The first time, if macOS blocks it, right-click that file, choose **Open**, then **Open**. The script clears the download quarantine on `Cozy Orca.app` and opens it. The app does not show a Dock icon.
+- **Linux.** Run `./launch-cozy-orca.sh` from the unzipped folder. A normal desktop already has the GTK libraries Electron needs. The script starts the app without the setuid sandbox helper, which a portable unzip cannot install.
+
+Orca must already be running for live status. The companion looks for `orca.exe` on Windows and `orca` on macOS and Linux, on your PATH, and it reconnects automatically. To use a specific Orca executable, set `COZY_ORCA_CLI` to that native path before launching. `.cmd` wrappers are not accepted.
+
+Settings and temporary files are created in `data` beside the app. On macOS that folder is next to `Cozy Orca.app`, not inside the bundle. Keep `data` with the app when you move it.
+
+- Drag the scene to move it. It starts in the bottom-right corner, above the taskbar or Dock.
 - Hover to reveal the **···** settings button. Right-click also opens settings.
 - Choose **2×**, **3×**, or **4×**, toggle **Reduced motion**, or reset its position.
-- Click the sailboat tray icon to hide or show it. Right-click the tray icon for settings or **Quit Cozy Orca**. Windows may put the icon in the tray overflow.
+- Click the sailboat icon in the menu bar or system tray to hide or show it. Right-click that icon for settings or **Quit Cozy Orca**. Windows may put the icon in the tray overflow.
 - Size, position, and reduced motion survive restart. Starting a second copy shows the first.
 
 The companion stays above ordinary apps and browser fullscreen video without activating itself when shown. Exclusive fullscreen applications, secure Windows screens, and other topmost overlays can take precedence. It reports work; it never pauses or resumes an agent. There is no sound, notification, automatic startup, telemetry, or cloud service.
@@ -106,11 +120,11 @@ npm start
 npm run package
 ```
 
-`npm run verify` runs Electron smoke checks, captures the voyage fixtures and a contact sheet into `artifacts`, and checks the installed Orca CLI, including its task inventory. It uses separate verification settings. `npm run package` writes `dist/v1.2.0/Cozy Orca-win32-x64`. That folder follows the package version, so an earlier portable app and the user data beside it stay in place.
+`npm run verify` runs Electron smoke checks, captures the voyage fixtures and a contact sheet into `artifacts`, and checks the installed Orca CLI, including its task inventory. It uses separate verification settings. `npm run package` writes one folder per system under `dist/v1.3.0/` and a zip for each in `dist/`. Those folders follow the package version, so an earlier portable app and the user data beside it stay in place. Set `COZY_PACKAGE_TARGETS` to a comma-separated list such as `linux-x64,darwin-arm64` to build only those. A Windows checkout cannot build the macOS app unless it is allowed to create symlinks; the macOS zip is built on a Mac.
 
 All app-managed data stays with the app. Development dependencies and caches live in this project. The portable folder can sit on any drive; its `data` and `.tmp` folders live beside the executable. The launch script sets temporary storage before Electron starts.
 
-The default CLI is `orca.exe` (found on your PATH). To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
+The default CLI is `orca.exe` on Windows and `orca` on macOS and Linux, found on your PATH. To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
 
 Artwork and palette: `src/scene.js`. Status aggregation: `src/status.cjs`. Task inventory: `src/tasks.cjs`. Window, tray, and settings: `src/main.cjs`. The renderer receives only display status, never prompts, task specs, or raw outcomes.
 
@@ -140,7 +154,7 @@ Limits:
 
 ## Orca plugin (sidebar ship icon)
 
-This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar. Click it to show or hide the pixel scene. The panel only draws that scene: the buttons change the picture, and it does not read agent status. The portable Windows app is the one that follows live work. The panel has no network or process access and no capabilities.
+This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar. Click it to show or hide the pixel scene. The panel only draws that scene: the buttons change the picture, and it does not read agent status. The portable app is the one that follows live work. The panel has no network or process access and no capabilities.
 
 1. In Orca, enable the plugin system in settings (it is off by default).
 2. Install `https://github.com/aorru711711-wq/cozy-orca`, or for local development add this folder to `devPluginPaths`.
