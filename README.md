@@ -13,15 +13,26 @@
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download) · [Connect agents](#connect-agents) · [Supported](#supported) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Claude Code, Codex, Antigravity](docs/codex-and-claude-code.md) · [Pi](docs/pi.md)
+[Install and launch](#install-and-launch) · [Download](#download) · [Connect agents](#connect-agents) · [Supported](#supported) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Claude Code, Codex, Antigravity](docs/codex-and-claude-code.md) · [Pi](docs/pi.md)
 
 </div>
 
 ---
 
-One ship, many moods: sails up while agents work, a bigger ship with more crew, lanterns at night, furled sails when resting, and rain when something fails.
+One ship, many moods: sails up while agents work, a bigger ship with more crew, lanterns at night, furled sails when resting, and rain when something fails. It reads the local Orca fleet when Orca is running, and it also follows Claude Desktop, Claude Code, Codex Desktop, the Codex CLI, Antigravity/`agy`, and Pi through hooks, MCP, or a small extension. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
 
-A quiet pixel sailboat that follows AI agent work on your machine. It reads the local Orca fleet when Orca is running, and it also follows Claude Desktop, Claude Code, Codex Desktop, the Codex CLI, Antigravity/`agy`, and Pi through hooks, MCP, or a small extension. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
+## Install and launch
+
+**Portable app (no Node.js):** download a release zip below, unzip anywhere, then double-click **Launch Cozy Orca.cmd** (Windows), **Launch Cozy Orca.command** (macOS), or run `./launch-cozy-orca.sh` (Linux).
+
+**From source:**
+
+```powershell
+npm ci
+npm start
+```
+
+Connect non-Orca agents once with `npm run connect` (see below), then restart those agents. Orca fleet tracking needs no connect step: run Orca, then start the ship.
 
 ## Supported
 
@@ -63,10 +74,26 @@ Useful variants:
 ```powershell
 npm run connect -- --print
 npm run connect -- --only claude-desktop,claude-code,codex,antigravity,pi
+npm run connect -- --only claude-desktop
 npm run disconnect
 ```
 
 `agy` is an alias for Antigravity. Existing Orca fleet hooks are left alone. Each installer keeps a `.bak` of any config file it changes.
+
+### MCP (`ship_set_status`)
+
+Claude Desktop and Antigravity can drive the ship through the bundled MCP server (`mcp/server.cjs`). The only tool is **`ship_set_status`**. Call it with:
+
+| Argument | Required | Meaning |
+| --- | --- | --- |
+| `state` | yes | `working`, `needs_input`, `done`, `failed`, or `idle` |
+| `task` | no | short title shown for that session |
+| `session` | no | chat id when several chats sail at once |
+| `source` | no | agent label (defaults from `COZY_SHIP_SOURCE`) |
+
+Example instruction for Claude Desktop: *Call `ship_set_status` with `working` when you start a task, `needs_input` when you wait on me, and `done` or `failed` when you finish.*
+
+Hooks (Claude Code, Codex, Antigravity) and the Pi extension write the same status file the MCP server uses. There is no separate usage or billing API on this path — only `ship_set_status` and the hook/extension writers. Details: [Claude Desktop](docs/claude-desktop.md), [Claude Code / Codex / Antigravity](docs/codex-and-claude-code.md), [Pi](docs/pi.md).
 
 ## Showcase
 
@@ -195,3 +222,15 @@ Limits:
 - An empty known inventory means zero tasks in scope. The pill should omit the fraction when the total is zero or unknown. Unknown inventory must not be drawn as `✓0/0`.
 - A task refresh holds the next fleet read until it finishes, so a slow inventory delays one fleet sample. Commands never overlap.
 - Specs, prompts, results, and raw outcomes are not part of display data.
+
+## License
+
+Copyright (c) 2026 Lovecast Inc. Released under the [MIT License](LICENSE).
+
+## Trademark note
+
+Product names and marks mentioned here (including Orca, Claude, Codex, Antigravity/`agy`, Pi, and related logos) are trademarks of their respective owners. Cozy Orca is an independent companion; it is not affiliated with, endorsed by, or sponsored by those vendors. Provider icons under `assets/icons/` are unofficial identification marks for UI labeling only — see [assets/icons/README.md](assets/icons/README.md).
+
+## Suggested topics
+
+`pixel-art` · `ai-agents` · `orca` · `widget` · `cozy`
