@@ -4,6 +4,12 @@ A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI
 
 ## Showcase
 
+### In use inside Orca
+
+[▶ Watch the ship running in Orca (in-orca.mp4)](docs/showcase/in-orca.mp4)
+
+### Pixel art
+
 ![Cozy Orca tour: sailing, crew growth, night, resting, storm](docs/showcase/tour.gif)
 
 | Sailing | Night | Storm |
