@@ -20,30 +20,25 @@
   // Slightly dimmer than the old storm bands so rain reads against a heavier sky.
   const STORM_SKY = ['#363248', '#424058', '#504e64', '#5e5c70', '#6c6c7c', '#7a7a88'];
   const STORM_SEA = ['#72768a', '#5e6276', '#4c5064', '#3c4054', '#303244', '#262838'];
-  // Fixed lanes of short thin streaks. Position comes from the 12 fps frame clock, never Math.random.
-  const RAIN_BACK = [
-    { x: 6, len: 3, phase: 7 },
-    { x: 20, len: 2, phase: 19 },
-    { x: 34, len: 3, phase: 12 },
-    { x: 48, len: 2, phase: 3 },
-    { x: 64, len: 3, phase: 25 },
-    { x: 80, len: 2, phase: 15 },
-    { x: 96, len: 3, phase: 8 },
-    { x: 112, len: 2, phase: 22 },
-    { x: 128, len: 3, phase: 5 }
-  ];
-  const RAIN_FRONT = [
-    { x: 12, len: 3, phase: 2 },
-    { x: 26, len: 2, phase: 17 },
-    { x: 40, len: 3, phase: 9 },
-    { x: 54, len: 2, phase: 14 },
-    { x: 68, len: 3, phase: 5 },
-    { x: 82, len: 2, phase: 20 },
-    { x: 96, len: 3, phase: 11 },
-    { x: 110, len: 2, phase: 1 },
-    { x: 124, len: 3, phase: 7 },
-    { x: 136, len: 2, phase: 13 }
-  ];
+  // Deterministic rain: drops are seeded once, then moved by the 12 fps frame clock, never Math.random.
+  // Each drop falls on a wind slant, lands at its own depth on the sea, and splashes there.
+  function makeRain(count, seed, minLand, maxLand, minSpeed, maxSpeed, minLen, maxLen) {
+    let state = seed;
+    const next = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296; };
+    const drops = [];
+    for (let n = 0; n < count; n++) {
+      const speed = minSpeed + next() * (maxSpeed - minSpeed);
+      const land = Math.floor(minLand + next() * (maxLand - minLand));
+      drops.push({
+        x: next() * 144, land, speed, len: Math.round(minLen + next() * (maxLen - minLen)),
+        period: Math.ceil(land / speed) + 3 + Math.floor(next() * 6), phase: Math.floor(next() * 60)
+      });
+    }
+    return drops;
+  }
+  const RAIN_BACK = makeRain(34, 7, 36, 48, 2.2, 3, 2, 3);
+  const RAIN_FRONT = makeRain(26, 41, 46, 70, 4, 5.5, 3, 5);
+  const RAIN_SLANT = 0.3;
   // 3×5 bitmaps. '%' is corner dots + slash — not the Z-shaped 111/001/010/100/111 trap.
   const GLYPHS = {
     0: ['111', '101', '101', '101', '111'],
@@ -215,36 +210,28 @@
     function paintRain(drops, speed, color, alpha) {
       if (!view.hasError) return;
       const frame = view.reducedMotion ? 0 : Math.floor(seconds * 12);
-      const fallFrames = Math.ceil(36 / speed);
-      const period = fallFrames + 2;
-      for (let n = 0; n < drops.length; n++) {
-        const drop = drops[n];
-        const step = (drop.phase + frame) % period;
-        if (step >= fallFrames) {
-          // Tiny splash where the short streak meets the water.
-          const hit = drop.x + drop.len - 1;
-          ctx.globalAlpha = alpha;
-          if (step === fallFrames) {
-            fill(hit, 35, 1, 1, color);
-          } else {
-            fill(hit - 1, 36, 1, 1, color);
-            fill(hit + 1, 36, 1, 1, color);
-          }
-          ctx.globalAlpha = 1;
+      ctx.globalAlpha = alpha;
+      for (const drop of drops) {
+        const step = (drop.phase + frame) % drop.period;
+        const head = Math.floor(step * drop.speed);
+        const slantX = y => Math.round(drop.x + y * RAIN_SLANT) % 144;
+        if (head >= drop.land) {
+          // Landed: a small ripple that widens, then fades with the next drop.
+          const age = step - Math.ceil(drop.land / drop.speed);
+          if (age > 2) continue;
+          const hx = slantX(drop.land);
+          fill(hx, drop.land, 1, 1, color);
+          if (age >= 1) { fill(hx - 1, drop.land, 1, 1, color); fill(hx + 1, drop.land, 1, 1, color); }
           continue;
         }
-        const bottom = Math.min(35, (step + 1) * speed);
-        ctx.globalAlpha = alpha;
-        // One pixel right per step down so short streaks read as wind-slanted dashes.
         for (let i = 0; i < drop.len; i++) {
-          const sy = bottom - drop.len + 1 + i;
-          if (sy < 1 || sy > 35) continue;
-          fill(drop.x + i, sy, 1, 1, color);
+          const y = head - i;
+          if (y < 1 || y >= drop.land) continue;
+          fill(slantX(y), y, 1, 1, color);
         }
-        ctx.globalAlpha = 1;
       }
+      ctx.globalAlpha = 1;
     }
-    // Dashes of one colour on a row, starting at a phase offset. Used for wakes and reflections.
     function dashRow(x0, x1, y, period, on, offset, color) {
       const start = ((offset % period) + period) % period;
       for (let x = x0 - start; x < x1; x += period) {
