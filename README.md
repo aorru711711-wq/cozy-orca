@@ -233,4 +233,4 @@ Product names and marks mentioned here (including Orca, Claude, Codex, Antigravi
 
 ## Suggested topics
 
-`pixel-art` · `ai-agents` · `orca` · `widget` · `cozy`
+`pixel-art`, `ai-agents`, `orca`, `widget`, `cozy`
