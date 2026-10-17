@@ -135,9 +135,11 @@
     const day = !night && !view.hasError;
     const dip = day && phase > 0 ? Math.min(3, Math.round(phase * 6)) : 0;
 
+    // Horizontal origin, so far scenery can slide past the anchored ship.
+    let originX = 0;
     function fill(x, y, w, h, color) {
       if (w <= 0 || h <= 0) return;
-      const left = Math.round(x);
+      const left = Math.round(x) + originX;
       const top = Math.round(y);
       const x0 = left < 0 ? 0 : left;
       const y0 = top < 0 ? 0 : top;
@@ -357,10 +359,15 @@
     }
 
     // ---------- Headland with a little lighthouse ----------
+    // Land drifts slowly astern while sailing, then returns from ahead on a wider loop than the view.
+    const LAND_LOOP = 300;
+    const landShift = moving ? Math.floor(seconds * 1.5) % LAND_LOOP : 0;
+    for (const lap of [0, LAND_LOOP]) {
+    originX = lap - landShift;
     const farHill = view.hasError ? '#68647a' : night ? '#56506c' : '#b394a6';
     const nearHill = view.hasError ? '#56526a' : night ? '#463f5c' : '#93788f';
-    poly([[0, 30], [7, 28], [13, 29], [20, 31], [29, 33], [40, 36], [0, 36]], farHill);
-    poly([[0, 33], [6, 32], [12, 31], [19, 32], [26, 34], [33, 36], [0, 37]], nearHill);
+    poly([[-10, 36], [-3, 31], [0, 30], [7, 28], [13, 29], [20, 31], [29, 33], [40, 36]], farHill);
+    poly([[-10, 37], [-3, 33], [0, 33], [6, 32], [12, 31], [19, 32], [26, 34], [33, 36]], nearHill);
     fill(4, 33, 3, 1, view.hasError ? '#4c4860' : night ? '#3c3652' : '#86697f');
     fill(21, 25, 3, 7, night ? '#a89eb4' : view.hasError ? '#8a8698' : '#eadbcf');
     fill(21, 27, 3, 1, night ? '#86627a' : '#b8676a');
@@ -381,6 +388,9 @@
         }
       });
     }
+
+    }
+    originX = 0;
 
     // ---------- Sea ----------
     for (let i = 0; i < 6; i++) fill(0, 36 + i * 6, 144, 6, sea[i]);
@@ -460,7 +470,9 @@
     const buoySpots = [[6, 34], [16, 34], [26, 34], [128, 34], [134, 34], [140, 34]];
     const buoyCount = view.remaining == null ? 0 : Math.min(view.remaining, buoySpots.length);
     for (let i = 0; i < buoyCount; i++) {
-      const [bx, by] = buoySpots[i];
+      const [spotX, by] = buoySpots[i];
+      // Buoys sit nearer than the land, so they slide past faster, wrapping around the view.
+      const bx = moving ? (((spotX - Math.floor(seconds * 4)) % 150) + 150) % 150 - 6 : spotX;
       fill(bx + 1, by, 1, 1, '#f2c14e');
       fill(bx, by + 1, 3, 1, '#f0e2c4');
       fill(bx, by + 2, 3, 2, palette.buoy);
