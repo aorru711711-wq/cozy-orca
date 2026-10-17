@@ -32,7 +32,7 @@ function readRaw(file) {
 }
 
 /** Record one session's state. Used by the MCP server. */
-function report({ file = defaultFile(), session = 'claude-desktop', state, task, now = Date.now() }) {
+function report({ file = defaultFile(), session = 'claude-desktop', source, state, task, now = Date.now() }) {
   if (!STATES.has(state)) throw new Error(`state must be one of: ${[...STATES].join(', ')}`);
   const id = String(session).replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 64) || 'claude-desktop';
   const data = readRaw(file);
@@ -42,6 +42,7 @@ function report({ file = defaultFile(), session = 'claude-desktop', state, task,
     const same = previous && previous.state === state;
     data.sessions[id] = {
       state, task: cleanTask(task) || (previous ? previous.task : ''),
+      source: cleanTask(source).slice(0, 32) || (previous && previous.source) || '',
       startedAt: same ? previous.startedAt : now, updatedAt: now
     };
   }
@@ -62,7 +63,7 @@ function readAgents({ file = defaultFile(), now = Date.now() } = {}) {
     const finished = s.state === 'done' || s.state === 'failed';
     if (age > STALE_MS || (finished && age > DONE_KEEP_MS)) continue;
     agents.push({
-      id: `claude:${id}`, name: 'Claude Desktop', task: typeof s.task === 'string' ? s.task : '',
+      id: `claude:${id}`, name: (typeof s.source === 'string' && s.source) || 'Claude Desktop', task: typeof s.task === 'string' ? s.task : '',
       state: s.state === 'working' ? 'working' : s.state === 'needs_input' ? 'waiting' : 'done',
       paused: false, failed: s.state === 'failed', changedAt: s.startedAt, startedAt: s.startedAt
     });
@@ -78,11 +79,12 @@ function mergeSnapshot(base, agents) {
   const working = rows.some(r => r.state === 'working');
   const waiting = rows.some(r => r.state === 'waiting' || r.state === 'blocked');
   const kind = working ? 'working' : waiting ? 'waiting' : 'idle';
+  const names = [...new Set(agents.map(a => a.name))].join(', ');
   const label = working ? (waiting ? 'Working · needs input' : 'Working') : waiting ? 'Needs input' : 'Idle';
   return {
     ...base, kind, label, agents: rows, needsInput: waiting,
     hasError: rows.some(r => r.failed),
-    reason: bad ? 'Claude Desktop' : `${base.reason}; Claude Desktop`
+    reason: bad ? names : `${base.reason}; ${names}`
   };
 }
 
