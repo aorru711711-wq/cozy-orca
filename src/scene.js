@@ -67,6 +67,7 @@
     { dx: 26, dy: -18, hat: palette.hats[7], shirt: '#51406a' }
   ];
   // Puffy clouds as rows of [start, width] runs. The first row is the sunlit top, the last the warm underside.
+  // Draw multiplies speed by cloudDrift: idle/resting ~0.42 for a soft calm sky, working stays at 1.
   const CLOUDS = [
     { x: 4, y: 10, speed: 0.11, rows: [[[8, 5]], [[5, 10], [17, 4]], [[2, 21]], [[0, 25]], [[4, 18]]] },
     { x: 66, y: 15, speed: 0.07, rows: [[[6, 4]], [[3, 9], [14, 3]], [[0, 19]], [[3, 13]]] },
@@ -318,11 +319,14 @@
 
     const cloudTones = view.hasError ? ['#6a6578', '#5c5870', '#4e4a60']
       : night ? ['#76667e', '#64566f', '#83697a'] : ['#dcb1ad', '#c49ba8', '#ecbfa6'];
+    // Idle/resting drifts are soft and slow; sailing keeps the usual pace.
+    const calmSky = view.kind !== 'working' && !view.hasError;
+    const cloudDrift = calmSky ? 0.42 : 1;
     for (const cloud of CLOUDS) {
       if (cloud.high && view.hasError) continue;
       const width = 26;
       const span = 144 + width * 2;
-      const cx = Math.round((((cloud.x - t * cloud.speed) % span) + span) % span) - width;
+      const cx = Math.round((((cloud.x - t * cloud.speed * cloudDrift) % span) + span) % span) - width;
       for (let r = 0; r < cloud.rows.length; r++) {
         const tone = r === 0 ? cloudTones[0] : r === cloud.rows.length - 1 ? cloudTones[2] : cloudTones[1];
         for (const [start, w] of cloud.rows[r]) fill(cx + start, cloud.y + r, w, 1, tone);
@@ -337,6 +341,7 @@
     if (root.CozyBirds && typeof root.CozyBirds.draw === 'function') {
       root.CozyBirds.draw(ctx, {
         seconds: seconds,
+        kind: view.kind,
         night: night,
         storm: view.hasError,
         reducedMotion: view.reducedMotion

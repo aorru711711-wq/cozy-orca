@@ -1,15 +1,17 @@
 /* Occasional seagulls in the upper sky. Coordinates stay on the 144 × 72 grid.
-   Night and storm draw nothing. There is no sound. */
+   Idle/resting keeps 1–2 slow gliders. Working, night, and storm draw nothing.
+   There is no sound. */
 (function (root) {
   const BODY = '#f4dfb7';
   const WING = '#d5bc9b';
   const SHADE = '#695060';
   // Mostly off the canvas. A bird is in the open sky for well under half the cycle.
+  // Long periods keep the glide calm for the idle vibe.
   const ROUTE_START = -160;
   const ROUTE_SPAN = 480;
   const FLOCK = [
-    { period: 120, offset: 0, altitude: 5 },
-    { period: 180, offset: 100, altitude: 13 }
+    { period: 220, offset: 0, altitude: 5 },
+    { period: 320, offset: 140, altitude: 13 }
   ];
 
   function overlaps(x, y, w, h, left, top, width, height) {
@@ -58,18 +60,26 @@
   }
 
   function glideY(seconds, bird) {
-    return bird.altitude + Math.round(Math.sin(seconds * 0.45));
+    // Gentle bob so idle gulls feel slow rather than busy.
+    return bird.altitude + Math.round(Math.sin(seconds * 0.22));
   }
 
   function wingFrame(seconds) {
-    const frame = Math.floor(seconds * 2) % 2;
+    const frame = Math.floor(seconds * 1.1) % 2;
     return frame < 0 ? frame + 2 : frame;
+  }
+
+  // Resting moods get gulls. Working keeps the sky clear for the voyage.
+  function isResting(kind) {
+    if (typeof kind !== 'string' || kind.length === 0) return true;
+    return kind !== 'working';
   }
 
   function draw(ctx, env) {
     if (!ctx || typeof ctx.fillRect !== 'function') throw new TypeError('CozyBirds.draw requires a 2D context');
     const source = env && typeof env === 'object' ? env : {};
     if (source.night === true || source.storm === true) return;
+    if (!isResting(source.kind)) return;
     if (source.reducedMotion === true) {
       paintGull(ctx, 36, 5, 0);
       paintGull(ctx, 70, 13, 0);
