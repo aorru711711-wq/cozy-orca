@@ -9,7 +9,6 @@ const ROOT = path.resolve(__dirname, '..');
 const VERIFY = process.argv.includes('--verify');
 const dataRoot = process.env.COZY_DATA_DIR || (app.isPackaged
   ? path.join(path.dirname(process.execPath), 'data') : path.join(ROOT, 'data'));
-if (!/^E:[\\/]/i.test(dataRoot)) throw new Error('Cozy Orca stores its data on E:. Set COZY_DATA_DIR to an E: folder.');
 const dataDir = VERIFY ? path.join(dataRoot, 'verification') : dataRoot;
 fs.mkdirSync(dataDir, { recursive: true });
 for (const name of ['userData', 'sessionData', 'logs', 'crashDumps', 'temp']) {

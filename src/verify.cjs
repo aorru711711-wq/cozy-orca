@@ -155,7 +155,7 @@ async function verify({ app, win, screen, settings, dataDir, position, show, men
     assert.equal(static1, static2); report.checks.push('Reduced motion is static');
     assert.equal(await win.webContents.executeJavaScript("getComputedStyle(canvas).imageRendering"), 'pixelated');
     report.checks.push('Canvas uses crisp pixel scaling');
-    const cli = process.env.COZY_ORCA_CLI || 'E:/Applications/Orca/resources/bin/orca.exe';
+    const cli = process.env.COZY_ORCA_CLI || 'orca.exe';
     const { stdout } = await promisify(execFile)(cli, ['worktree', 'ps', '--json'], { windowsHide: true, timeout: 5000, maxBuffer: 16 * 1024 * 1024 });
     const live = aggregate(JSON.parse(stdout));
     report.liveStatus = { kind: live.kind, label: live.label, reason: live.reason, agentCount: live.agents.length };

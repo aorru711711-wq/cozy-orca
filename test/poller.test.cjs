@@ -51,7 +51,7 @@ function taskList() {
 test('requests are serialized, bounded, hidden, and stopped without retries', async () => {
   let calls = 0, callback, options, args, killed = false;
   const statuses = [];
-  const poller = new OrcaPoller({ executable: 'E:/orca.exe', interval: 5, onStatus: state => statuses.push(state),
+  const poller = new OrcaPoller({ executable: 'orca.exe', interval: 5, onStatus: state => statuses.push(state),
     execute(_exe, argv, opts, cb) { calls++; callback = cb; options = opts; args = argv; return { kill() { killed = true; } }; } });
   poller.start(); poller.start();
   await new Promise(resolve => setTimeout(resolve, 20));
@@ -73,7 +73,7 @@ test('requests are serialized, bounded, hidden, and stopped without retries', as
 test('missing Orca is disconnected; timeout is unavailable', () => {
   for (const [error, kind] of [[{ code: 'ENOENT' }, 'disconnected'], [{ killed: true }, 'unavailable']]) {
     let callback, received;
-    const poller = new OrcaPoller({ executable: 'E:/missing.exe', onStatus: state => { received = state; },
+    const poller = new OrcaPoller({ executable: 'missing.exe', onStatus: state => { received = state; },
       execute(_exe, _args, _options, cb) { callback = cb; return { kill() {} }; } });
     poller.start(); callback(error, ''); poller.stop();
     assert.equal(received.kind, kind);
@@ -82,7 +82,7 @@ test('missing Orca is disconnected; timeout is unavailable', () => {
 test('task-source failure keeps a valid working fleet and publishes an unknown total', async () => {
   const io = queueExec();
   const statuses = [];
-  const poller = new OrcaPoller({ executable: 'E:/orca.exe', interval: 1000, taskInterval: 10000,
+  const poller = new OrcaPoller({ executable: 'orca.exe', interval: 1000, taskInterval: 10000,
     onStatus: state => statuses.push(state), execute: io.execute });
   poller.start();
   assert.equal(io.calls.length, 1);
@@ -107,7 +107,7 @@ test('task progress attaches after a serial inventory and refreshes on a 10 seco
   const io = queueExec();
   const statuses = [];
   const poller = new OrcaPoller({
-    executable: 'E:/Applications/Orca/resources/bin/orca.exe', interval: 20, taskInterval: 10000,
+    executable: 'orca.exe', interval: 20, taskInterval: 10000,
     now: () => clock, onStatus: state => statuses.push(state), execute: io.execute
   });
   poller.start();
@@ -137,7 +137,7 @@ test('task progress attaches after a serial inventory and refreshes on a 10 seco
   io.reply(null, fleet());
   await settle();
   assert.deepEqual(io.calls.at(-1).args, ['orchestration', 'run-list', '--json']);
-  assert.equal(io.calls.at(-1).exe, 'E:/Applications/Orca/resources/bin/orca.exe');
+  assert.equal(io.calls.at(-1).exe, 'orca.exe');
   poller.stop();
   const callsAtStop = io.calls.length;
   io.reply(null, runList());

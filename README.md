@@ -8,7 +8,6 @@ A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI
 
 ![Cozy Orca running in Orca](docs/showcase/in-orca.gif)
 
-[▶ Full video (in-orca.mp4)](docs/showcase/in-orca.mp4)
 
 ### Pixel art
 
@@ -36,7 +35,7 @@ Regenerate the images with `node scripts/render-showcase.cjs docs/showcase/all.p
 
 ## Launch the portable Windows app
 
-Keep the portable `Cozy Orca-win32-x64` folder on drive **E:**. The current package is `dist/v1.1.0/Cozy Orca-win32-x64`. Double-click **Launch Cozy Orca.cmd** inside that folder. No installation or administrator access is needed. Orca must already be running for live status; the companion reconnects automatically.
+Keep the portable `Cozy Orca-win32-x64` folder wherever you like. The current package is `dist/v1.1.0/Cozy Orca-win32-x64`. Double-click **Launch Cozy Orca.cmd** inside that folder. No installation or administrator access is needed. Orca must already be running for live status; the companion reconnects automatically.
 
 - Drag the scene to move it. It starts above the taskbar in the bottom-right corner.
 - Hover to reveal the **···** settings button. Right-click also opens settings.
@@ -81,9 +80,9 @@ npm run package
 
 `npm run verify` runs Electron smoke checks, captures the voyage fixtures and a contact sheet into `artifacts`, and checks the installed Orca CLI, including its task inventory. It uses separate verification settings. `npm run package` writes `dist/v1.1.0/Cozy Orca-win32-x64`. That folder follows the package version, so an earlier portable app and the user data beside it stay in place.
 
-All app-managed data stays on E:. Dependencies and caches live in this project; the portable app's `data` and `.tmp` folders live beside its executable. The launch script sets temporary storage before Electron starts. Do not move the application to C:.
+All app-managed data stays. Dependencies and caches live in this project; the portable app's `data` and `.tmp` folders live beside its executable. The launch script sets temporary storage before Electron starts. Do not move the application to C:.
 
-The default CLI is `E:\Applications\Orca\resources\bin\orca.exe`. To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder on E:.
+The default CLI is `E:\Applications\Orca\resources\bin\orca.exe`. To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
 
 Artwork and palette: `src/scene.js`. Status aggregation: `src/status.cjs`. Task inventory: `src/tasks.cjs`. Window, tray, and settings: `src/main.cjs`. The renderer receives only display status, never prompts, task specs, or raw outcomes.
 

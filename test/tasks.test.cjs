@@ -108,13 +108,13 @@ test('partial, unknown, and mismatched listings are rejected', () => {
 
 test('session tracks unfinished runs and keeps them after they finish', async () => {
   const io = scripted();
-  const source = new TaskSource({ executable: 'E:/Applications/Orca/resources/bin/orca.exe', execute: io.execute });
+  const source = new TaskSource({ executable: 'orca.exe', execute: io.execute });
   const first = source.collect();
   const second = source.collect();
   assert.equal(first, second);
   assert.equal(io.calls.length, 1);
   assert.deepEqual(io.calls[0].args, ['orchestration', 'run-list', '--json']);
-  assert.equal(io.calls[0].exe, 'E:/Applications/Orca/resources/bin/orca.exe');
+  assert.equal(io.calls[0].exe, 'orca.exe');
   assert.equal(io.calls[0].opts.windowsHide, true);
   assert.equal(io.calls[0].opts.shell, false);
   assert.equal(io.calls[0].opts.timeout, 5000);
@@ -163,7 +163,7 @@ test('session tracks unfinished runs and keeps them after they finish', async ()
 
 test('a failed refresh stays unknown and does not forget a tracked run', async () => {
   const io = scripted();
-  const source = new TaskSource({ executable: 'E:/orca.exe', execute: io.execute });
+  const source = new TaskSource({ executable: 'orca.exe', execute: io.execute });
   const started = source.collect();
   io.reply(null, runList([{ id: 'run_open', legacy: 0 }]));
   await settle();
@@ -190,7 +190,7 @@ test('a failed refresh stays unknown and does not forget a tracked run', async (
 
 test('an unfinished sibling still publishes when a tracked run disappears', async () => {
   const io = scripted();
-  const source = new TaskSource({ executable: 'E:/orca.exe', execute: io.execute, maxRunPages: 2 });
+  const source = new TaskSource({ executable: 'orca.exe', execute: io.execute, maxRunPages: 2 });
   const started = source.collect();
   io.reply(null, runList([{ id: 'run_open', legacy: 0 }], 'next'));
   await settle();
@@ -216,7 +216,7 @@ test('an unfinished sibling still publishes when a tracked run disappears', asyn
 
 test('a repeated cursor or endless page list is not a total', async () => {
   const repeated = scripted();
-  const source = new TaskSource({ executable: 'E:/orca.exe', execute: repeated.execute });
+  const source = new TaskSource({ executable: 'orca.exe', execute: repeated.execute });
   const pending = source.collect();
   repeated.reply(null, runList([{ id: 'run_open', legacy: 0 }], 'same'));
   await settle();
@@ -225,7 +225,7 @@ test('a repeated cursor or endless page list is not a total', async () => {
   assert.equal(source.lastFailure, 'run-list cursor repeated');
 
   const endless = scripted();
-  const capped = new TaskSource({ executable: 'E:/orca.exe', execute: endless.execute, maxRunPages: 1 });
+  const capped = new TaskSource({ executable: 'orca.exe', execute: endless.execute, maxRunPages: 1 });
   const blocked = capped.collect();
   endless.reply(null, runList([{ id: 'run_open', legacy: 0 }], 'more'));
   assert.deepEqual(await blocked, { known: false, items: [], runIds: [] });
