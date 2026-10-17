@@ -1,0 +1,20 @@
+:root { color-scheme: dark; font-family: 'Segoe UI', sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #302d47; }
+#scene { position: relative; width: 100%; height: 100%; -webkit-app-region: drag; user-select: none; }
+canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+#status { position: absolute; bottom: 7px; left: 9px; display: flex; align-items: center; gap: 4px;
+  max-width: calc(100% - 15px); white-space: nowrap; font-variant-numeric: tabular-nums;
+  font-size: 10px; line-height: 15px; font-weight: 500; letter-spacing: 0;
+  color: #f3e0d1; padding: 0 5px; background: #29263dd9; border-radius: 3px; }
+#label { white-space: nowrap; }
+#dot { width: 4px; height: 4px; background: #a59bb7; flex: none; }
+body[data-kind="working"] #dot { background: #d6dfa1; }
+body[data-kind="waiting"] #dot, body[data-attention="true"] #dot { background: #f4c37e; }
+body[data-kind="finished"] #dot { background: #ffe3a8; }
+body[data-error="true"] #dot { background: #e09898; }
+#menu { -webkit-app-region: no-drag; position: absolute; right: 5px; top: 5px; border: 0; border-radius: 3px;
+  width: 24px; height: 20px; padding: 0 0 7px; color: #f6dfd2; background: #302d4770;
+  font: bold 20px/15px 'Segoe UI', sans-serif; opacity: 0; cursor: pointer; }
+#scene:hover #menu, #menu:focus-visible { opacity: 1; }
+#menu:focus-visible { outline: 1px solid #ffe3a8; }

@@ -1,0 +1,754 @@
+/* Original cozy dusk pixel art. All coordinates are on a 144 × 72 integer grid.
+   draw(ctx, display, timeSeconds) keeps that picture when voyage fields are absent.
+   Optional fields: crewCount, sailingMs, completedCount, totalCount, remainingCount,
+   completionSerial, completionAt, hasError, plus kind, needsInput, and reducedMotion.
+   The status line is not drawn here. There is no sound. */
+(function (root) {
+  const palette = {
+    sky: ['#80708e', '#9c7f99', '#ba8d9f', '#d39d9f', '#e5b09e', '#efc39e'],
+    sea: ['#8b819f', '#726c8e', '#5d5b7b', '#4b4969', '#393751', '#302d47'],
+    wood: '#a47462', rim: '#d4a17b', hull: '#785454', shade: '#574451',
+    sail: '#f4dfb7', sailShade: '#d5bc9b', mast: '#695060', light: '#ffe2a5',
+    flag: '#c4453c', flare: '#fff1c9', gold: '#fff6d2', buoy: '#e07a3a',
+    crate: '#8a5a3c', badge: '#241e30', wake: '#b1a0ae', digit: '#f6edd8',
+    stormSky: '#403c50', nightSky: '#3c3450', moon: '#efe6d4', clock: '#3a3348',
+    passing: '#f2d27a', groupHat: '#efe6d2',
+    hats: ['#d4524a', '#e6c15a', '#6ea36a', '#d4893c', '#6a90c4', '#d7a0b0', '#8fd0c4', '#3d8fd4']
+  };
+  const NIGHT_SKY = ['#3c3450', '#4c4060', '#5e4c68', '#705872', '#82667c', '#947888'];
+  const NIGHT_SEA = ['#6d6788', '#5a5678', '#484666', '#3a3854', '#2e2c44', '#262338'];
+  const STORM_SKY = ['#403c50', '#4c485c', '#5a586c', '#6a687c', '#7a7a8a', '#8a8a96'];
+  const STORM_SEA = ['#72768a', '#5e6276', '#4c5064', '#3c4054', '#303244', '#262838'];
+  // Fixed lanes. Position comes from the 12 fps frame clock, never from Math.random.
+  const RAIN_BACK = [
+    { x: 6, len: 4, phase: 7 },
+    { x: 24, len: 3, phase: 16 },
+    { x: 48, len: 5, phase: 3 },
+    { x: 72, len: 4, phase: 21 },
+    { x: 100, len: 3, phase: 11 },
+    { x: 128, len: 4, phase: 27 }
+  ];
+  const RAIN_FRONT = [
+    { x: 16, len: 4, phase: 2 },
+    { x: 36, len: 5, phase: 9 },
+    { x: 52, len: 3, phase: 14 },
+    { x: 64, len: 4, phase: 5 },
+    { x: 80, len: 5, phase: 11 },
+    { x: 96, len: 4, phase: 1 },
+    { x: 112, len: 3, phase: 7 },
+    { x: 136, len: 4, phase: 13 }
+  ];
+  const GLYPHS = {
+    0: ['111', '101', '101', '101', '111'],
+    1: ['110', '010', '010', '010', '111'],
+    2: ['111', '001', '111', '100', '111'],
+    3: ['111', '001', '111', '001', '111'],
+    4: ['101', '101', '111', '001', '001'],
+    5: ['111', '100', '111', '001', '111'],
+    6: ['111', '100', '111', '101', '111'],
+    7: ['111', '001', '010', '010', '010'],
+    8: ['111', '101', '111', '101', '111'],
+    9: ['111', '101', '111', '001', '111']
+  };
+  // Eight non-overlapping berths. Overflow clusters at the stern instead of adding a ninth pose.
+  const SAILORS = [
+    { dx: 1, dy: 0, hat: palette.hats[0], shirt: '#3e6f86' },
+    { dx: 5, dy: 0, hat: palette.hats[1], shirt: '#6d4a86' },
+    { dx: 12, dy: -6, hat: palette.hats[2], shirt: '#8d4e38' },
+    { dx: 23, dy: 0, hat: palette.hats[3], shirt: '#355e4c' },
+    { dx: 28, dy: 0, hat: palette.hats[4], shirt: '#a34858' },
+    { dx: 33, dy: 0, hat: palette.hats[5], shirt: '#4e6a32' },
+    { dx: 43, dy: 0, hat: palette.hats[6], shirt: '#7a3e52' },
+    { dx: 26, dy: -18, hat: palette.hats[7], shirt: '#51406a' }
+  ];
+  // Puffy clouds as rows of [start, width] runs. The first row is the sunlit top, the last the warm underside.
+  const CLOUDS = [
+    { x: 4, y: 10, speed: 0.11, rows: [[[8, 5]], [[5, 10], [17, 4]], [[2, 21]], [[0, 25]], [[4, 18]]] },
+    { x: 66, y: 15, speed: 0.07, rows: [[[6, 4]], [[3, 9], [14, 3]], [[0, 19]], [[3, 13]]] },
+    { x: 44, y: 4, speed: 0.04, high: true, rows: [[[4, 5]], [[0, 14]], [[3, 8]]] }
+  ];
+  const STARS = [
+    [22, 15], [34, 3], [47, 9], [58, 2], [63, 13], [77, 6], [89, 11], [96, 3],
+    [104, 15], [118, 8], [126, 14], [137, 17], [41, 20], [84, 19], [12, 19], [70, 24]
+  ];
+  const DAY_MS = 900000;
+  const SPARK_MS = 1800;
+  const WAKE_STEP_MS = 30000;
+
+  function whole(value) {
+    return Number.isInteger(value) && value >= 0 ? value : null;
+  }
+
+  // Stable pseudo-random value in [0, 1) for an integer seed. Never Math.random.
+  function hash(n) {
+    let h = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+
+  function readDisplay(state) {
+    const source = state && typeof state === 'object' ? state : {};
+    const kind = typeof source.kind === 'string' ? source.kind : 'unavailable';
+    let completed = whole(source.completedCount);
+    let remaining = whole(source.remainingCount);
+    const total = whole(source.totalCount);
+    if (completed == null && total != null && remaining != null) completed = Math.max(0, total - remaining);
+    if (remaining == null && total != null && completed != null) remaining = Math.max(0, total - completed);
+    const sailingKnown = Number.isFinite(source.sailingMs) && source.sailingMs >= 0;
+    return {
+      kind,
+      needsInput: source.needsInput === true,
+      reducedMotion: source.reducedMotion === true,
+      hasError: source.hasError === true,
+      crewCount: whole(source.crewCount),
+      sailingKnown,
+      sailingMs: sailingKnown ? source.sailingMs : 0,
+      completed,
+      remaining,
+      completionSerial: whole(source.completionSerial) || 0,
+      completionAt: Number.isFinite(source.completionAt) && source.completionAt > 0 ? source.completionAt : 0
+    };
+  }
+
+  function draw(ctx, state, time) {
+    if (!ctx || typeof ctx.fillRect !== 'function') throw new TypeError('CozyScene.draw requires a 2D context');
+    if ('imageSmoothingEnabled' in ctx) ctx.imageSmoothingEnabled = false;
+    const view = readDisplay(state);
+    const seconds = Number.isFinite(time) ? time : 0;
+    // Every animation reads t, so reduced motion is one still frame.
+    const t = view.reducedMotion ? 0 : seconds;
+    const moving = view.kind === 'working' && !view.reducedMotion;
+    const tick = moving ? Math.floor(seconds * 3) : 0;
+    // The ship never jumps. The sea slides past it when sailing and only breathes when resting.
+    const flow = moving ? t * 2.4 : t * 0.3;
+    const phase = view.sailingKnown ? (view.sailingMs % DAY_MS) / DAY_MS : 0;
+    const night = !view.hasError && phase >= 0.5 && phase < 0.85;
+    const day = !night && !view.hasError;
+    const dip = day && phase > 0 ? Math.min(3, Math.round(phase * 6)) : 0;
+
+    function fill(x, y, w, h, color) {
+      if (w <= 0 || h <= 0) return;
+      const left = Math.round(x);
+      const top = Math.round(y);
+      const x0 = left < 0 ? 0 : left;
+      const y0 = top < 0 ? 0 : top;
+      const right = left + w;
+      const bottom = top + h;
+      const x1 = right > 144 ? 144 : right;
+      const y1 = bottom > 72 ? 72 : bottom;
+      if (x0 >= x1 || y0 >= y1) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
+    function faint(alpha, paint) {
+      ctx.globalAlpha = alpha;
+      paint();
+      ctx.globalAlpha = 1;
+    }
+    function crossings(points, y) {
+      const hits = [];
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) {
+          hits.push(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+        }
+      }
+      return hits.sort((a, b) => a - b);
+    }
+    function poly(points, color) {
+      const min = Math.ceil(Math.min(...points.map(point => point[1])));
+      const max = Math.max(...points.map(point => point[1]));
+      for (let y = min; y < max; y++) {
+        const hits = crossings(points, y);
+        for (let i = 0; i + 1 < hits.length; i += 2) {
+          fill(Math.ceil(hits[i]), y, Math.ceil(hits[i + 1]) - Math.ceil(hits[i]), 1, color);
+        }
+      }
+    }
+    // One row of a polygon, trimmed by `inset` pixels on each side. Used for seams and shading inside sails.
+    function polyRow(points, y, inset, color, from, to) {
+      const hits = crossings(points, y);
+      if (hits.length < 2) return;
+      const left = Math.max(Math.ceil(hits[0]) + inset, from == null ? -Infinity : from);
+      const right = Math.min(Math.ceil(hits[hits.length - 1]) - inset, to == null ? Infinity : to);
+      if (right > left) fill(left, y, right - left, 1, color);
+    }
+    function line(x0, y0, x1, y1, color) {
+      const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let i = 0; i <= steps; i++) {
+        fill(Math.round(x0 + (x1 - x0) * i / steps), Math.round(y0 + (y1 - y0) * i / steps), 1, 1, color);
+      }
+    }
+    function glyph(char, x, y, color) {
+      const rows = GLYPHS[char];
+      if (!rows) return;
+      for (let gy = 0; gy < rows.length; gy++) {
+        for (let gx = 0; gx < rows[gy].length; gx++) if (rows[gy][gx] === '1') fill(x + gx, y + gy, 1, 1, color);
+      }
+    }
+    function counter(text, x, y) {
+      fill(x - 1, y - 1, text.length * 4 + 1, 7, palette.badge);
+      for (let i = 0; i < text.length; i++) glyph(text[i], x + i * 4, y, palette.digit);
+    }
+    function paintRain(drops, speed, color, alpha) {
+      if (!view.hasError) return;
+      const frame = view.reducedMotion ? 0 : Math.floor(seconds * 12);
+      const fallFrames = Math.ceil(36 / speed);
+      const period = fallFrames + 2;
+      for (let n = 0; n < drops.length; n++) {
+        const drop = drops[n];
+        const step = (drop.phase + frame) % period;
+        if (step >= fallFrames) {
+          const hit = drop.x + 7;
+          ctx.globalAlpha = alpha;
+          if (step === fallFrames) {
+            fill(hit, 35, 1, 1, color);
+            fill(hit + 2, 35, 1, 1, color);
+          } else {
+            fill(hit - 1, 36, 1, 1, color);
+            fill(hit + 1, 36, 1, 1, color);
+            fill(hit + 3, 36, 1, 1, color);
+          }
+          ctx.globalAlpha = 1;
+          continue;
+        }
+        const bottom = Math.min(35, (step + 1) * speed);
+        ctx.globalAlpha = alpha;
+        for (let i = 0; i < drop.len; i++) {
+          const sy = bottom - drop.len + 1 + i;
+          fill(drop.x + Math.floor(sy / 5), sy, 1, 1, color);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+    // Dashes of one colour on a row, starting at a phase offset. Used for wakes and reflections.
+    function dashRow(x0, x1, y, period, on, offset, color) {
+      const start = ((offset % period) + period) % period;
+      for (let x = x0 - start; x < x1; x += period) {
+        const left = Math.max(x, x0);
+        const right = Math.min(x + on, x1);
+        if (right > left) fill(left, y, right - left, 1, color);
+      }
+    }
+    function disc(cx, cy, r, color, bottom) {
+      for (let row = -Math.floor(r); row <= Math.floor(r); row++) {
+        if (cy + row >= bottom) break;
+        const half = Math.round(Math.sqrt(r * r - row * row));
+        fill(cx - half, cy + row, half * 2 + 1, 1, color);
+      }
+    }
+    // One checker row between flat colour bands, so gradients read soft instead of striped.
+    function blendBands(top, colors, step, first) {
+      for (let i = first; i < colors.length; i++) {
+        const b = top + i * step;
+        for (let px = 0; px < 144; px += 2) fill(px, b - 1, 1, 1, colors[i]);
+      }
+    }
+
+    // ---------- Sky ----------
+    const sky = view.hasError ? STORM_SKY : night ? NIGHT_SKY : palette.sky;
+    const sea = view.hasError ? STORM_SEA : night ? NIGHT_SEA : palette.sea;
+    for (let i = 0; i < 6; i++) fill(0, i * 6, 144, 6, sky[i]);
+    blendBands(0, sky, 6, 2);
+    if (night) {
+      for (let i = 0; i < STARS.length; i++) {
+        const [sx, sy] = STARS[i];
+        const twinkle = hash(i * 17 + Math.floor(t * 0.7 + i * 0.37));
+        if (twinkle < 0.12) continue;
+        fill(sx, sy, 1, 1, twinkle > 0.8 ? '#f6f0e4' : i % 3 === 0 ? '#c8c0dc' : '#a89cc0');
+        if (twinkle > 0.93 && i % 4 === 0) {
+          faint(0.5, () => {
+            fill(sx - 1, sy, 1, 1, '#d8d0e4');
+            fill(sx + 1, sy, 1, 1, '#d8d0e4');
+            fill(sx, sy - 1, 1, 1, '#d8d0e4');
+            fill(sx, sy + 1, 1, 1, '#d8d0e4');
+          });
+        }
+      }
+    }
+    if (!view.hasError) {
+      // Soft halo: faint concentric discs behind the sun or moon, clipped at the horizon.
+      const glowColor = night ? '#d8d0e4' : '#ffe2b0';
+      const glowY = night ? 28 : 29 + dip;
+      [22, 17, 13].forEach(r => faint(night ? 0.07 : 0.1, () => disc(115, glowY, r, glowColor, 36)));
+    }
+    if (day) {
+      const cy = 29 + dip;
+      for (let row = -10; row <= 7; row++) {
+        // Sunset stripes: two thin gaps let the sky show through the low part of the sun.
+        if (row === 3 || row === 6) continue;
+        const half = Math.round(Math.sqrt(110 - row * row));
+        const color = row <= -6 ? '#fde3b4' : row <= 1 ? '#f8d6ad' : row === 2 ? '#f1c8a2' : row <= 5 ? '#eeba9a' : '#e8ad96';
+        fill(115 - half, cy + row, half * 2 + 1, 1, color);
+      }
+      fill(110, cy - 8, 4, 1, '#fff0cf');
+      fill(108, cy - 7, 3, 1, '#fff0cf');
+    } else if (night) {
+      for (let row = -7; row <= 7; row++) {
+        const half = Math.round(Math.sqrt(49.6 - row * row));
+        fill(115 - half, 28 + row, half * 2 + 1, 1, palette.moon);
+        // The far limb sits in soft shadow.
+        fill(115 + half - (half > 4 ? 2 : 1), 28 + row, half > 4 ? 2 : 1, 1, '#d6ccc4');
+      }
+      fill(111, 23, 3, 1, '#fbf6ea');
+      fill(110, 24, 1, 2, '#fbf6ea');
+      fill(116, 25, 3, 2, '#d6ccc4');
+      fill(112, 29, 2, 2, '#d6ccc4');
+      fill(117, 31, 2, 1, '#d6ccc4');
+      fill(119, 27, 1, 1, '#c8beb8');
+    } else {
+      faint(0.5, () => disc(116, 29, 7, '#9a94a2', 36));
+      fill(110, 26, 12, 7, '#8d868f');
+    }
+
+    const cloudTones = view.hasError ? ['#6a6578', '#5c5870', '#4e4a60']
+      : night ? ['#76667e', '#64566f', '#83697a'] : ['#dcb1ad', '#c49ba8', '#ecbfa6'];
+    for (const cloud of CLOUDS) {
+      if (cloud.high && view.hasError) continue;
+      const width = 26;
+      const span = 144 + width * 2;
+      const cx = Math.round((((cloud.x - t * cloud.speed) % span) + span) % span) - width;
+      for (let r = 0; r < cloud.rows.length; r++) {
+        const tone = r === 0 ? cloudTones[0] : r === cloud.rows.length - 1 ? cloudTones[2] : cloudTones[1];
+        for (const [start, w] of cloud.rows[r]) fill(cx + start, cloud.y + r, w, 1, tone);
+      }
+    }
+    if (view.hasError) {
+      fill(40, 7, 18, 2, '#3e3a50');
+      fill(44, 6, 9, 1, '#3e3a50');
+      fill(86, 5, 16, 2, '#3a3648');
+      fill(90, 4, 7, 1, '#3a3648');
+    }
+    if (root.CozyBirds && typeof root.CozyBirds.draw === 'function') {
+      root.CozyBirds.draw(ctx, {
+        seconds: seconds,
+        night: night,
+        storm: view.hasError,
+        reducedMotion: view.reducedMotion
+      });
+    }
+    if (root.CozyNight && typeof root.CozyNight.draw === 'function') {
+      root.CozyNight.draw(ctx, {
+        seconds: seconds,
+        night: night,
+        storm: view.hasError,
+        reducedMotion: view.reducedMotion
+      });
+    }
+    if (view.sailingKnown) {
+      // One slow hand around a fifteen-minute sailing day. Position comes from sailingMs, not the frame clock.
+      fill(130, 2, 12, 9, palette.clock);
+      fill(131, 3, 10, 7, night ? '#241c33' : '#6a4a52');
+      fill(132 + Math.round(phase * 7), 5, 2, 2, night ? palette.moon : '#f8d6ad');
+    }
+
+    // ---------- Headland with a little lighthouse ----------
+    const farHill = view.hasError ? '#68647a' : night ? '#56506c' : '#b394a6';
+    const nearHill = view.hasError ? '#56526a' : night ? '#463f5c' : '#93788f';
+    poly([[0, 30], [7, 28], [13, 29], [20, 31], [29, 33], [40, 36], [0, 36]], farHill);
+    poly([[0, 33], [6, 32], [12, 31], [19, 32], [26, 34], [33, 36], [0, 37]], nearHill);
+    fill(4, 33, 3, 1, view.hasError ? '#4c4860' : night ? '#3c3652' : '#86697f');
+    fill(21, 25, 3, 7, night ? '#a89eb4' : view.hasError ? '#8a8698' : '#eadbcf');
+    fill(21, 27, 3, 1, night ? '#86627a' : '#b8676a');
+    fill(21, 30, 3, 1, night ? '#86627a' : '#b8676a');
+    fill(23, 25, 1, 7, night ? '#8a8098' : view.hasError ? '#76728a' : '#cdb8b2');
+    fill(20, 22, 5, 1, palette.shade);
+    fill(21, 23, 3, 2, view.hasError ? '#7a7484' : '#ffe2a5');
+    fill(20, 25, 5, 1, palette.shade);
+    if (night) {
+      // The lamp turns: its beam swings left and right across the dusk.
+      const swing = Math.sin(t * 0.8);
+      faint(0.16, () => {
+        const reach = Math.round(swing * 18);
+        if (Math.abs(reach) > 2) {
+          const from = reach > 0 ? 24 : 21 + reach;
+          poly([[reach > 0 ? 24 : 21, 23], [reach > 0 ? 24 + reach : 21 + reach, 21], [reach > 0 ? 24 + reach : 21 + reach, 26], [reach > 0 ? 24 : 21, 24.9]], '#ffe8b8');
+          fill(from, 23, Math.abs(reach), 1, '#ffe8b8');
+        }
+      });
+    }
+
+    // ---------- Sea ----------
+    for (let i = 0; i < 6; i++) fill(0, 36 + i * 6, 144, 6, sea[i]);
+    blendBands(36, sea, 6, 1);
+    fill(0, 36, 144, 1, view.hasError ? '#80849a' : night ? '#7e7898' : '#a092ad');
+
+    function paintWaves() {
+      const hi = view.hasError ? ['#a0a6b8', '#868ca2', '#6c7288']
+        : night ? ['#a29cbc', '#847ea4', '#68628c'] : ['#c4b0be', '#a08fb0', '#7a6f96'];
+      const lo = view.hasError ? '#22242f' : night ? '#1f1c30' : '#29263f';
+      const foam = view.hasError ? '#c0c4d0' : null;
+      for (let r = 0; r < 11; r++) {
+        const y = 39 + Math.round(Math.pow(r, 1.3) * 1.45);
+        const depth = r / 10;
+        const spacing = 26 + Math.round(depth * 30);
+        const baseLen = 2 + Math.round(depth * 6);
+        const shift = flow * (0.4 + depth * 1.3);
+        const count = Math.ceil(144 / spacing) + 2;
+        const span = count * spacing;
+        const tone = hi[depth < 0.3 ? 0 : depth < 0.65 ? 1 : 2];
+        for (let i = 0; i < count; i++) {
+          const seed = r * 97 + i * 13;
+          const home = i * spacing + hash(seed) * spacing * 0.7 - shift;
+          const wx = Math.round((((home % span) + span) % span) - spacing);
+          const breathe = 0.6 + 0.4 * Math.sin(t * (0.7 + hash(seed + 5) * 0.8) + hash(seed + 7) * 6.28);
+          const len = Math.max(1, Math.round(baseLen * (0.6 + hash(seed + 3) * 0.6) * breathe));
+          if (depth > 0.45 && len >= 4) {
+            // Near swells get a rounded crest: a short bright cap over a longer body.
+            fill(wx + 1, y - 1, len - 2, 1, foam && hash(seed + 11) > 0.5 ? foam : hi[Math.max(0, hi.indexOf(tone) - 1)]);
+            fill(wx, y, len, 1, tone);
+          } else {
+            fill(wx, y, len, 1, tone);
+          }
+          if (depth > 0.45) faint(0.3, () => fill(wx + 1, y + 1, len, 1, lo));
+        }
+      }
+    }
+    function paintLight() {
+      const tones = day
+        ? ['#fff0c8', '#ffe2a5', '#f8d6ad', '#efc39e', '#e5b09e', '#d39d9f', '#b98e9a', '#9e829a']
+        : night
+          ? ['#fbf6ea', '#efe6d4', '#d8d0dc', '#b8b2cc', '#9a94b4', '#7e7a9c', '#686488', '#5a5678']
+          : ['#9a96a4', '#8a8494', '#7e7a8a', '#6e6a78', '#5e5a6c', '#545064', '#4a465c', '#403c52'];
+      const rows = [39, 40, 41, 42, 44, 45, 47, 49, 51, 53, 56, 59, 62, 65, 68];
+      for (let k = 0; k < rows.length; k++) {
+        const depth = k / (rows.length - 1);
+        const half = 4 + Math.round(depth * 9);
+        const seg = 3 + Math.round(depth * 3);
+        const sway = Math.round(Math.sin(t * 1.1 + k * 0.8) * (0.5 + depth * 1.5));
+        const beat = Math.floor(t * 1.6 + hash(k * 7) * 4);
+        for (let j = -Math.ceil(half / seg); j <= Math.ceil(half / seg); j++) {
+          const seed = k * 131 + j * 17 + beat * 7919;
+          const edge = Math.abs(j * seg) / half;
+          if (hash(seed) < 0.12 + edge * 0.5) continue;
+          const len = Math.max(1, Math.round(seg * (0.55 + hash(seed + 1) * 0.6) * (1 - edge * 0.35)));
+          const left = 115 + sway + j * seg - Math.floor(len / 2);
+          const shadeStep = Math.floor(depth * 5) + (edge > 0.6 ? 1 : 0) + (hash(seed + 2) > 0.8 ? -1 : 0);
+          fill(left, rows[k], len, 1, tones[Math.max(1, Math.min(tones.length - 1, shadeStep + 1))]);
+          if (hash(seed + 9) > 0.9 && !view.hasError) fill(left + (len >> 1), rows[k], 1, 1, tones[0]);
+        }
+      }
+      if (day) {
+        fill(109, 37, 14, 1, '#f8d6ad');
+        fill(112, 38, 8, 1, '#ffe2a5');
+        fill(113, 37, 5, 1, '#fff0c8');
+      } else if (night) {
+        fill(111, 37, 10, 1, '#efe6d4');
+        fill(113, 38, 6, 1, '#efe6d4');
+      }
+    }
+    paintWaves();
+    paintLight();
+    paintRain(RAIN_BACK, 1, '#8494a6', 0.4);
+
+    const age = view.completionAt > 0 && view.completionSerial > 0 ? Date.now() - view.completionAt : null;
+    const celebrating = age != null && age >= 0 && age < SPARK_MS;
+    const buoySpots = [[6, 34], [16, 34], [26, 34], [128, 34], [134, 34], [140, 34]];
+    const buoyCount = view.remaining == null ? 0 : Math.min(view.remaining, buoySpots.length);
+    for (let i = 0; i < buoyCount; i++) {
+      const [bx, by] = buoySpots[i];
+      fill(bx + 1, by, 1, 1, '#f2c14e');
+      fill(bx, by + 1, 3, 1, '#f0e2c4');
+      fill(bx, by + 2, 3, 2, palette.buoy);
+      faint(0.4, () => fill(bx - 1, by + 4, 5, 1, '#b8a0a8'));
+    }
+    if (celebrating) {
+      const travel = view.reducedMotion ? 0 : age / SPARK_MS;
+      const bx = 36 + Math.round(travel * 110);
+      fill(bx + 1, 33, 1, 1, '#fff6c8');
+      fill(bx, 34, 3, 1, '#f0e2c4');
+      fill(bx, 35, 3, 2, palette.passing);
+    }
+    if (view.remaining != null && view.remaining > buoySpots.length) counter(String(view.remaining), 8, 26);
+
+    // ---------- Ship ----------
+    // The hull is anchored: x and y never change, only cloth, flags and water move.
+    const x = 45;
+    const y = 46;
+    const masts = view.crewCount == null ? 1 : view.crewCount <= 1 ? 1 : view.crewCount <= 4 ? 2 : 3;
+    const rigs = masts === 1 ? [[24, 28, 0]] : masts === 2 ? [[16, 22, 7], [36, 27, 7]] : [[9, 20, 6], [25, 29, 7], [41, 24, 6]];
+    const wakeExtra = Math.min(24, Math.floor(view.sailingMs / WAKE_STEP_MS));
+    const lampWarm = view.kind !== 'disconnected' && view.kind !== 'unavailable';
+    const sailing = view.kind === 'working';
+    const billow = moving ? Math.floor(seconds * 1.5) % 2 : 0;
+    const lap = Math.floor(t * (moving ? 4 : 1.5));
+
+    // Reflection: the hull's dark shape, broken by ripples, plus a ghost of the sails and lit portholes.
+    for (let j = 0; j < 6; j++) {
+      const ripple = Math.round(Math.sin(t * 1.6 + j * 1.3) * (j < 2 ? 0.6 : 1.2));
+      faint(0.62 - j * 0.07, () => dashRow(x + 5 + j * 2 + ripple, x + 46 - j * 3 + ripple, y + 7 + j, 13 + j, 10 - j, j * 5 + (lap >> 1), '#2e2840'));
+    }
+    if (sailing) {
+      faint(night ? 0.12 : 0.18, () => {
+        for (let j = 0; j < 4; j++) {
+          const ripple = Math.round(Math.sin(t * 1.3 + j * 1.9) * 1.4);
+          dashRow(x + 9 + j + ripple, x + 40 - j * 2 + ripple, y + 10 + j * 2, 9, 5, j * 4, '#f4dfb7');
+        }
+      });
+    }
+    faint(night ? 0.7 : 0.4, () => {
+      [14, 22, 30].forEach((px, i) => fill(x + px + ((lap + i) % 3 === 0 ? 1 : 0), y + 8 + i % 2 * 2, 2, 1, '#f3c47a'));
+      if (lampWarm) fill(x + 37 + (lap % 2), y + 10, 3, 1, '#ffd89a');
+    });
+    if (sailing) {
+      const trail = moving ? tick % 4 : 0;
+      // Two arms of the wake spread behind the stern, with foam breaking along them.
+      fill(x - 12 - wakeExtra - trail, y + 6, 13 + wakeExtra, 1, palette.wake);
+      fill(x - 6 - Math.floor(wakeExtra / 2), y + 8, 9 + Math.floor(wakeExtra / 2), 1, '#8e819c');
+      faint(0.7, () => dashRow(x - 24 - wakeExtra, x - 1, y + 7, 6, 3, moving ? tick * 2 : 0, '#a898a8'));
+      faint(0.6, () => dashRow(x - 20 - Math.floor(wakeExtra / 2), x + 2, y + 9, 7, 2, moving ? tick * 3 : 2, '#857a9a'));
+      fill(x - 2, y + 5, 4, 1, '#d8cad8');
+      fill(x - 1 - (tick % 2), y + 6, 3, 1, '#e8dce6');
+    }
+
+    // Sail cloth takes the light of the hour: warm at dusk, moon-grey at night, dull in the storm.
+    const cloth = view.hasError ? { sail: '#cfc6bc', shade: '#a39a9c', seam: '#bdb4b0', lit: '#ddd6cc' }
+      : night ? { sail: '#ddd0bc', shade: '#ada0a2', seam: '#c9bcae', lit: '#ece2d2' }
+        : { sail: palette.sail, shade: palette.sailShade, seam: '#e7cfa6', lit: '#fbecc8' };
+    // Standing rigging sits behind the sails.
+    const rope = view.hasError ? '#5a5466' : night ? '#5c4c64' : '#8c6f7a';
+    const fore = rigs[rigs.length - 1];
+    const aft = rigs[0];
+    line(x + 52, y - 3, x + 59, y - 6, palette.mast);
+    line(x + fore[0], y - fore[1], x + 59, y - 6, rope);
+    line(x + aft[0], y - aft[1], x + 1, y - 3, rope);
+    for (let i = 0; i + 1 < rigs.length; i++) line(x + rigs[i][0], y - rigs[i][1] + 2, x + rigs[i + 1][0], y - rigs[i + 1][1], rope);
+
+    function pennant(px, top) {
+      if (view.hasError) return;
+      const frame = moving ? Math.floor(seconds * 4) % 3 : 0;
+      fill(px + 1, top, 4, 1, '#c88e86');
+      fill(px + 1, top + 1, 3, 1, '#a8706e');
+      if (frame === 0) fill(px + 5, top, 2, 1, '#c88e86');
+      else if (frame === 1) fill(px + 4, top + 1, 2, 1, '#c88e86');
+      else { fill(px + 5, top + 1, 1, 1, '#c88e86'); fill(px + 6, top, 1, 1, '#c88e86'); }
+    }
+    function sloop() {
+      const top = y - 28;
+      fill(x + 24, top, 1, 28, palette.mast);
+      fill(x + 23, top - 1, 3, 1, palette.rim);
+      const main = [[x + 23, y - 26], [x + 23, y - 6], [x + 5, y - 6], [x + 9 - billow, y - 13], [x + 15 - billow, y - 20]];
+      poly(main, cloth.sail);
+      for (let row = y - 24; row < y - 6; row++) polyRow(main, row, 0, cloth.shade, x + 20, x + 23);
+      for (let row = y - 22; row < y - 6; row += 5) polyRow(main, row, 1, cloth.seam);
+      for (let row = y - 24; row < y - 6; row++) polyRow(main, row, 0, cloth.lit, null, Math.ceil(crossings(main, row)[0]) + 1);
+      fill(x + 4, y - 6, 21, 1, palette.mast);
+      const jib = [[x + 26, y - 25], [x + 38 + billow, y - 14], [x + 52, y - 4], [x + 41, y - 5], [x + 29, y - 6]];
+      poly(jib, cloth.sail);
+      for (let row = y - 20; row < y - 5; row++) polyRow(jib, row, 0, cloth.shade, null, x + 29);
+      for (let row = y - 21; row < y - 5; row += 5) polyRow(jib, row, 1, cloth.seam);
+      for (let row = y - 24; row < y - 4; row++) {
+        const hits = crossings(jib, row);
+        if (hits.length >= 2) fill(Math.ceil(hits[hits.length - 1]) - 1, row, 1, 1, cloth.lit);
+      }
+      pennant(x + 24, top);
+    }
+    function squareSail(cx, top, bottom, half) {
+      for (let row = top; row <= bottom; row++) {
+        const f = (row - top) / Math.max(1, bottom - top);
+        const bulge = Math.round(Math.sin(f * Math.PI) * 1.2);
+        const left = cx - half - bulge;
+        const width = (half + bulge) * 2 + 1;
+        fill(left, row, width, 1, cloth.sail);
+        fill(left, row, Math.max(2, Math.round(width * 0.3)), 1, cloth.shade);
+        fill(left + width - 1, row, 1, 1, cloth.lit);
+      }
+      // The belly of the sail sags below the yard line and breathes with the wind.
+      fill(cx - half + 2, bottom + 1, half * 2 - 3, 1, billow ? cloth.sail : cloth.shade);
+      if (billow) fill(cx - half + 4, bottom + 2, half * 2 - 7, 1, cloth.shade);
+      fill(cx - half, top + Math.floor((bottom - top) / 2), half * 2 + 1, 1, cloth.seam);
+      fill(cx - half - 1, top - 1, half * 2 + 3, 1, palette.mast);
+    }
+    function squareRig(post, height, half) {
+      const top = y - height;
+      fill(x + post, top, 1, height, palette.mast);
+      fill(x + post - 1, top - 1, 3, 1, palette.rim);
+      const split = top + Math.floor(height * 0.42);
+      squareSail(x + post, top + 3, split, half - 2);
+      squareSail(x + post, split + 3, y - 9, half);
+      pennant(x + post, top);
+    }
+    function furled(post, height, half) {
+      const top = y - height;
+      fill(x + post, top, 1, height, palette.mast);
+      fill(x + post - 1, top - 1, 3, 1, palette.rim);
+      if (half === 0) {
+        fill(x + 5, y - 8, 18, 2, cloth.shade);
+        fill(x + 6, y - 9, 16, 1, cloth.sail);
+        [8, 13, 18].forEach(px => fill(x + px, y - 9, 1, 3, palette.mast));
+        fill(x + 4, y - 6, 21, 1, palette.mast);
+        return;
+      }
+      [top + 3, top + Math.floor(height * 0.42) + 3].forEach((yard, i) => {
+        const w = i === 0 ? half - 2 : half;
+        fill(x + post - w - 1, yard - 1, w * 2 + 3, 1, palette.mast);
+        fill(x + post - w, yard - 3, w * 2 + 1, 2, cloth.shade);
+        fill(x + post - w + 1, yard - 3, w * 2 - 1, 1, cloth.sail);
+      });
+    }
+
+    if (sailing) {
+      if (masts === 1) sloop();
+      else {
+        rigs.forEach(([post, height, half]) => squareRig(post, height, half));
+        if (masts === 2) {
+          const staysail = [[x + 45, y - 19], [x + 53, y - 4], [x + 45, y - 7]];
+          poly(staysail, cloth.sail);
+          for (let row = y - 16; row < y - 7; row++) polyRow(staysail, row, 0, cloth.shade, null, x + 47);
+        } else fill(x + 22, y - 17, 9, 1, palette.mast);
+      }
+    } else rigs.forEach(([post, height, half]) => furled(post, height, half));
+
+    // Cabin: warm window, little door, dark roof the third berth stands on.
+    fill(x + 9, y - 5, 9, 5, palette.wood);
+    fill(x + 9, y - 3, 9, 1, '#93644f');
+    fill(x + 8, y - 6, 11, 1, palette.shade);
+    fill(x + 9, y - 5, 9, 1, '#c08a6a');
+    fill(x + 11, y - 4, 3, 2, night ? '#ffd89a' : '#f3c47a');
+    fill(x + 12, y - 4, 1, 2, '#c99a6a');
+    fill(x + 15, y - 4, 2, 4, palette.shade);
+
+    // Hull: a curved sheer that lifts to the bow, planked in three tones, sitting low in the water.
+    const hullRows = [[0, 46, palette.rim], [0, 49, '#8f6458'], [1, 50, palette.hull], [1, 49, palette.hull], [2, 47, '#6a4a50'], [4, 45, palette.shade]];
+    hullRows.forEach(([l, r, color], i) => fill(x + l, y + i, r - l, 1, color));
+    fill(x + 46, y, 5, 1, '#8f6458');
+    fill(x + 46, y - 1, 3, 1, palette.rim);
+    fill(x + 49, y - 1, 3, 1, '#8f6458');
+    fill(x + 49, y - 2, 3, 1, palette.rim);
+    fill(x + 51, y - 3, 2, 1, palette.rim);
+    fill(x + 52, y - 2, 1, 2, '#8f6458');
+    fill(x + 3, y + 3, 44, 1, '#6e4c4e');
+    fill(x, y - 3, 7, 1, palette.rim);
+    [0, 3, 6].forEach(px => fill(x + px, y - 2, 1, 2, '#8f6458'));
+    [14, 22, 30].forEach(px => {
+      fill(x + px, y + 2, 2, 1, night ? '#ffd89a' : '#f3c47a');
+      fill(x + px, y + 3, 2, 1, '#3e2f40');
+    });
+
+    function sailor(px, py, hat, shirt, tall) {
+      fill(px + 1, py - 5, 1, 1, hat);
+      if (tall) fill(px + 1, py - 6, 1, 1, hat);
+      fill(px, py - 4, 3, 1, hat);
+      fill(px + 1, py - 3, 1, 1, '#f0d0b0');
+      fill(px, py - 2, 3, 2, shirt);
+      fill(px, py, 1, 1, '#3a3044');
+      fill(px + 2, py, 1, 1, '#3a3044');
+    }
+    if (view.crewCount > 0) {
+      const shown = Math.min(view.crewCount, SAILORS.length);
+      for (let i = 0; i < shown; i++) {
+        const slot = SAILORS[i];
+        sailor(x + slot.dx, y + slot.dy, slot.hat, slot.shirt, i % 2 === 0);
+      }
+      if (view.crewCount > SAILORS.length) sailor(x + 3, y - 8, palette.groupHat, '#2c3148', false);
+    }
+
+    const attention = view.needsInput || view.kind === 'waiting';
+    const finished = view.kind === 'finished';
+    if (attention || finished) {
+      const strength = finished && !view.reducedMotion ? 0.10 + 0.07 * Math.sin(Math.min(seconds, 3) * Math.PI / 3) : 0.12;
+      ctx.globalAlpha = strength;
+      fill(x + 33, y - 10, 11, 11, palette.light);
+      fill(x + 35, y - 8, 7, 7, palette.light);
+      ctx.globalAlpha = 1;
+    } else if (lampWarm) {
+      faint(night ? 0.16 : 0.08, () => disc(x + 38, y - 4, 4, palette.light, 72));
+    }
+    fill(x + 38, y - 7, 1, 2, palette.mast);
+    const lamp = attention || finished ? '#ffe2a5'
+      : view.kind === 'disconnected' ? '#8ea0b0'
+        : view.kind === 'unavailable' ? '#5a5468' : '#c9a085';
+    fill(x + 37, y - 6, 3, 1, palette.shade);
+    fill(x + 37, y - 5, 3, 3, lamp);
+    fill(x + 37, y - 2, 3, 1, palette.mast);
+    // Waiting stays a steady lamp. The frame clock never moves it.
+    if (attention) {
+      fill(x + 38, y - 14, 1, 4, palette.flare);
+      fill(x + 37, y - 15, 3, 1, palette.flare);
+    }
+    if (view.hasError) {
+      const post = masts === 2 ? 36 : masts === 3 ? 25 : 24;
+      fill(x + post, y - 34, 1, 28, palette.mast);
+      fill(x + post - 10, y - 34, 10, 2, palette.flag);
+      fill(x + post - 8, y - 32, 8, 1, '#9e3330');
+    }
+
+    // Waterline: little waves lap over the bottom strake and a bright seam of foam hugs the hull.
+    const water = sea[2];
+    for (let px = x + 4; px < x + 45; px++) {
+      if ((px + lap) % 9 < 3) fill(px, y + 5, 1, 1, water);
+    }
+    dashRow(x + 2, x + 48, y + 6, 9, 5, -lap, view.hasError ? '#9ca2b4' : night ? '#9e98b8' : '#b7a4b8');
+    if (sailing) {
+      // Bow wave curls white off the stem.
+      fill(x + 45, y + 5, 6, 1, palette.wake);
+      fill(x + 47 + (tick % 2), y + 4, 4, 1, '#e2d6e0');
+      fill(x + 50, y + 3, 1, 1, '#f0e8f0');
+      faint(0.6, () => fill(x + 49 + (tick % 3), y + 6, 6, 1, '#c8b8c8'));
+    }
+
+    const crateSlots = 6;
+    const crates = view.completed == null ? 0 : Math.min(view.completed, crateSlots);
+    if (crates > 0) {
+      // A little raft carries the finished cargo.
+      fill(98, 68, crates * 6 + 3, 2, '#6b4a3e');
+      fill(98, 68, crates * 6 + 3, 1, '#8c6450');
+      for (let px = 101; px < 98 + crates * 6 + 3; px += 4) fill(px, 69, 1, 1, '#523a36');
+      faint(0.5, () => dashRow(96, 102 + crates * 6, 70, 5, 3, -lap, '#8a7c9c'));
+    }
+    for (let i = 0; i < crates; i++) {
+      const stacked = view.completed >= 4 && i < 3;
+      const top = stacked ? 62 : 64;
+      const height = stacked ? 6 : 4;
+      const left = 100 + i * 6;
+      fill(left, top, 5, height, palette.crate);
+      fill(left, top, 5, 1, '#d7a87a');
+      fill(left + 2, top, 1, height, '#6b4330');
+      fill(left, top + 2, 5, 1, '#6b4330');
+    }
+    if (view.completed != null && view.completed > crateSlots) counter(String(view.completed), 104, 56);
+
+    if (celebrating) {
+      const newest = Math.max(0, crates - 1);
+      const stacked = view.completed >= 4 && newest < 3;
+      const sx = crates > 0 ? 102 + newest * 6 : x + 18;
+      const sy = crates > 0 ? (stacked ? 61 : 63) : y - 10;
+      const rise = view.reducedMotion ? 0 : Math.round(age / SPARK_MS * 12);
+      fill(sx, sy - rise, 1, 1, palette.gold);
+      if (!view.reducedMotion) {
+        fill(sx - 2, sy - rise + 4, 1, 1, '#ffe08a');
+        fill(sx + 2, sy - rise + 2, 1, 1, '#e7b84a');
+      }
+    }
+
+    if (view.crewCount != null) {
+      const text = String(view.crewCount);
+      fill(2, 2, 12 + text.length * 4, 9, palette.badge);
+      fill(5, 3, 3, 1, '#f0d7b4');
+      fill(6, 4, 1, 2, '#f0d7b4');
+      fill(4, 6, 5, 1, '#f0d7b4');
+      fill(5, 7, 3, 1, '#f0d7b4');
+      fill(6, 8, 1, 1, '#f0d7b4');
+      fill(5, 9, 1, 1, '#f0d7b4');
+      fill(7, 9, 1, 1, '#f0d7b4');
+      for (let i = 0; i < text.length; i++) glyph(text[i], 11 + i * 4, 4, palette.digit);
+    }
+
+    if (root.CozySparkles && typeof root.CozySparkles.draw === 'function') {
+      root.CozySparkles.draw(ctx, {
+        seconds: seconds,
+        night: night,
+        storm: view.hasError,
+        reducedMotion: view.reducedMotion
+      });
+    }
+    paintRain(RAIN_FRONT, 2, '#c5d2de', 0.72);
+    fill(0, 0, 144, 1, '#b59bad');
+    fill(0, 71, 144, 1, '#252338');
+  }
+
+  root.CozyScene = { draw, palette };
+})(typeof window === 'undefined' ? globalThis : window);

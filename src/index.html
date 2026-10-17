@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <title>Cozy Orca</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="scene" aria-label="Cozy Orca sailing companion">
+    <canvas id="ocean" width="144" height="72" aria-hidden="true"></canvas>
+    <div id="status" role="status" aria-live="polite" title="Connecting · 0 observed turns"><span id="dot"></span><span id="label">Connecting · 0 crew · 0m · ✓0</span></div>
+    <button id="menu" aria-label="Companion settings" title="Settings · right-click anywhere">···</button>
+  </main>
+  <script src="life/birds.js"></script>
+  <script src="life/sparkles.js"></script>
+  <script src="life/night.js"></script>
+  <script src="scene.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+.cache/
+.tmp/
+dist/
+data/
+artifacts/
+HANDOFF.md
+scripts/launch-grok-worker.ps1

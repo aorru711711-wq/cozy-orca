@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Cozy Orca · visual verification</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<style>
+body { margin: 0; padding: 28px; background: #222131; color: #f3e0d1; font: 14px 'Segoe UI', sans-serif; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 500; } p { color: #b6a9bf; margin: 0 0 22px; }
+section { display: grid; grid-template-columns: repeat(2, 288px); gap: 18px 24px; }
+figure { margin: 0; } figcaption { margin-bottom: 7px; color: #c5b5c8; font-size: 12px; }
+.scene { position: relative; width: 288px; height: 144px; }
+canvas { width: 288px; height: 144px; image-rendering: pixelated; }
+.label { position: absolute; bottom: 7px; left: 9px; max-width: 270px; padding: 0 6px; border-radius: 3px;
+  background: #29263dd9; font: 500 10px/16px 'Segoe UI', sans-serif; white-space: nowrap; }
+</style></head><body><h1>Cozy Orca</h1><p>Original dusk pixel art · crew, elapsed sailing, crates, and one-line status</p><section id="states"></section>
+<script src="life/birds.js"></script><script src="life/sparkles.js"></script><script src="life/night.js"></script><script src="scene.js"></script><script src="preview.js"></script></body></html>
