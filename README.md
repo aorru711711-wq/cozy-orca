@@ -78,3 +78,13 @@ Limits:
 - An empty known inventory means zero tasks in scope. The pill should omit the fraction when the total is zero or unknown. Unknown inventory must not be drawn as `✓0/0`.
 - A task refresh holds the next fleet read until it finishes, so a slow inventory delays one fleet sample. Commands never overlap.
 - Specs, prompts, results, and raw outcomes are not part of display data.
+
+## Orca plugin (sidebar ship icon)
+
+This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar; click it to show or hide a live cozy ship scene inside Orca. The panel has no network or process access and no capabilities.
+
+1. In Orca, enable the plugin system in settings (it is off by default).
+2. Install `https://github.com/aorru711711-wq/cozy-orca`, or for local development add this folder to `devPluginPaths`.
+3. Approve the plugin and click the ship icon.
+
+The panel is a single generated file, `panel/index.html`. After editing `src/scene.js` or `src/life/*`, run `node scripts/build-panel.cjs` and commit the result.

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cozy Ship</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #302d47; color: #f3e0d1; font: 12px 'Segoe UI', sans-serif; }
+  body { display: flex; flex-direction: column; gap: 8px; padding: 8px; box-sizing: border-box; }
+  canvas { width: 100%; aspect-ratio: 2 / 1; image-rendering: pixelated; border-radius: 6px; display: block; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: inherit; color: inherit; background: #4b4969; border: 1px solid #726c8e; border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #e5b09e; color: #302d47; border-color: #efc39e; }
+  button:focus-visible { outline: 2px solid #ffe3a8; }
+  p { margin: 0; opacity: .7; line-height: 1.4; }
+</style>
+</head>
+<body>
+<canvas id="c" width="144" height="72" aria-label="Pixel sailboat at sea"></canvas>
+<div class="row" role="group" aria-label="Scene">
+  <button data-s="day" aria-pressed="true">Sailing</button>
+  <button data-s="idle" aria-pressed="false">Resting</button>
+  <button data-s="night" aria-pressed="false">Night</button>
+  <button data-s="storm" aria-pressed="false">Storm</button>
+</div>
+<div class="row" role="group" aria-label="Crew">
+  <button data-c="1" aria-pressed="true">1 crew</button>
+  <button data-c="3" aria-pressed="false">3 crew</button>
+  <button data-c="8" aria-pressed="false">8 crew</button>
+</div>
+<p>Click the ship icon in the sidebar to hide or show this scene.</p>
+<script>/*__LIFE__*/</script>
+<script>/*__SCENE__*/</script>
+<script>
+(function () {
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var scene = 'day', crew = 1, origin = performance.now(), last = 0;
+  function state() {
+    var s = { kind: scene === 'idle' ? 'idle' : 'working', crewCount: crew, sailingMs: 0,
+      completedCount: 2, remainingCount: 2, reducedMotion: still };
+    if (scene === 'night') s.sailingMs = 500000;
+    if (scene === 'storm') s.hasError = true;
+    return s;
+  }
+  function frame(now) {
+    if (!document.hidden && now - last >= 1000 / 12) {
+      CozyScene.draw(ctx, state(), still ? 0 : (now - origin) / 1000);
+      last = now;
+    }
+    requestAnimationFrame(frame);
+  }
+  function wire(attr, apply) {
+    var buttons = document.querySelectorAll('[' + attr + ']');
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        apply(b.getAttribute(attr));
+        buttons.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      });
+    });
+  }
+  wire('data-s', function (v) { scene = v; });
+  wire('data-c', function (v) { crew = Number(v); });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
