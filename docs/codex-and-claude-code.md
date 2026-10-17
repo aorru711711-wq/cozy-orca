@@ -4,10 +4,28 @@ These agents do not always show up in Orca's fleet feed. A small hook writes the
 
 ## Setup
 
-1. Clone this repo and install [Node.js](https://nodejs.org).
-2. Run `node scripts/install-hooks.cjs`. It merges hooks for Claude Code, Codex, and Antigravity, adds the Cozy Orca MCP server to Antigravity, and keeps a `.bak` of each file it changes. (`--print` shows the paths. `--remove` deletes only these hooks and the Antigravity MCP entry.)
-3. Restart Claude Code, Codex, and Antigravity/`agy`. If Codex asks you to trust the new hook, allow it.
-4. Start the Cozy Orca app.
+The easy path connects every agent at once:
+
+```powershell
+npm run connect
+```
+
+Then restart Claude Code, Codex, and Antigravity/`agy`. If Codex asks you to trust the new hook, allow it, and start the Cozy Orca app.
+
+Only these agents:
+
+```powershell
+npm run connect -- --only claude-code,codex,antigravity
+```
+
+`agy` is an alias for Antigravity. Remove with `npm run disconnect` or `npm run connect -- --remove --only claude-code,codex,antigravity`.
+
+That writes:
+
+- Claude Code hooks in `~/.claude/settings.json`
+- Codex hooks in `~/.codex/hooks.json`
+- Antigravity / `agy` hooks in `~/.gemini/config/hooks.json`
+- Antigravity MCP in `~/.gemini/config/mcp_config.json`
 
 Existing Orca fleet hooks (for example `orca-status` under Antigravity, or `codex-hook.cmd`) are left in place. The ship can follow both the Orca fleet and this status file at once.
 

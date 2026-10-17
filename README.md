@@ -13,7 +13,7 @@
 ![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
 ![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
 
-[Download](#download) · [Supported](#supported) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Claude Code, Codex, Antigravity](docs/codex-and-claude-code.md) · [Pi](docs/pi.md)
+[Download](#download) · [Connect agents](#connect-agents) · [Supported](#supported) · [Showcase](#showcase) · [Claude Desktop](docs/claude-desktop.md) · [Claude Code, Codex, Antigravity](docs/codex-and-claude-code.md) · [Pi](docs/pi.md)
 
 </div>
 
@@ -38,15 +38,35 @@ A quiet pixel sailboat that follows AI agent work on your machine. It reads the 
 
 | Agent | How the ship follows it |
 | --- | --- |
-| Orca fleet (any agent Orca tracks) | local Orca CLI |
-| Claude Desktop | MCP (`ship_set_status`) — [setup](docs/claude-desktop.md) |
-| Claude Code | hooks — [setup](docs/codex-and-claude-code.md) |
-| Codex Desktop | hooks (same file as the CLI) — [setup](docs/codex-and-claude-code.md) |
-| Codex CLI | hooks — [setup](docs/codex-and-claude-code.md) |
-| Antigravity / `agy` | hooks and MCP — [setup](docs/codex-and-claude-code.md) |
-| Pi | extension — [setup](docs/pi.md) |
+| Orca fleet (any agent Orca tracks) | local Orca CLI — no connect step |
+| Claude Desktop | MCP (`ship_set_status`) — [details](docs/claude-desktop.md) |
+| Claude Code | hooks — [details](docs/codex-and-claude-code.md) |
+| Codex Desktop | hooks (same file as the CLI) — [details](docs/codex-and-claude-code.md) |
+| Codex CLI | hooks — [details](docs/codex-and-claude-code.md) |
+| Antigravity / `agy` | hooks and MCP — [details](docs/codex-and-claude-code.md) |
+| Pi | extension — [details](docs/pi.md) |
 
 Several sources can sail at once. Each live session is a crew member. Orca is optional when you only use the hook, MCP, or Pi paths.
+
+## Connect agents
+
+One command wires every non-Orca agent:
+
+```powershell
+npm run connect
+```
+
+Then restart Claude Desktop, Claude Code, Codex, Antigravity/`agy`, and Pi (or run `/reload` in Pi). If Codex asks to trust the new hook, allow it. Start the ship with `npm start` or the portable launcher.
+
+Useful variants:
+
+```powershell
+npm run connect -- --print
+npm run connect -- --only claude-desktop,claude-code,codex,antigravity,pi
+npm run disconnect
+```
+
+`agy` is an alias for Antigravity. Existing Orca fleet hooks are left alone. Each installer keeps a `.bak` of any config file it changes.
 
 ## Showcase
 

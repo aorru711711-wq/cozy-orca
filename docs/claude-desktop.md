@@ -6,15 +6,25 @@ waits or glows to match. It works alongside Orca: if both are active, the ship s
 
 ## Setup
 
-1. Install [Node.js](https://nodejs.org) and clone this repo.
-2. Run `node scripts/install-claude-desktop.cjs`. It adds `cozy-orca-ship` to Claude Desktop's
-   config and keeps a `.bak` copy. That file is `%APPDATA%\Claude\claude_desktop_config.json`
-   on Windows, `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, and
-   `~/.config/Claude/claude_desktop_config.json` on Linux. (`--print` shows the entry instead,
-   if you prefer to paste it yourself.)
-3. Fully quit and reopen Claude Desktop, then start the Cozy Orca app.
-4. Tell Claude once, for example in a Project's instructions:
-   *"Call ship_set_status with working when you start a task, needs_input when you wait on me, and done or failed when you finish."*
+The easy path connects Claude Desktop with every other supported agent:
+
+```powershell
+npm run connect
+```
+
+Only Claude Desktop:
+
+```powershell
+npm run connect -- --only claude-desktop
+```
+
+That adds `cozy-orca-ship` to Claude Desktop's config and keeps a `.bak` copy. The file is `%APPDATA%\Claude\claude_desktop_config.json` on Windows, `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, and `~/.config/Claude/claude_desktop_config.json` on Linux. (`npm run connect -- --print` shows the paths.)
+
+Fully quit and reopen Claude Desktop, then start the Cozy Orca app. Tell Claude once, for example in a Project's instructions:
+
+*"Call ship_set_status with working when you start a task, needs_input when you wait on me, and done or failed when you finish."*
+
+Remove with `npm run connect -- --remove --only claude-desktop`.
 
 ## States
 

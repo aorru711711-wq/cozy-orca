@@ -5,11 +5,21 @@ It needs no Orca. It works alongside Orca and Claude Desktop, and the ship shows
 
 ## Setup
 
-1. Clone this repo and install [Node.js](https://nodejs.org).
-2. Run `node scripts/install-pi.cjs`. It copies the extension to `~/.pi/agent/extensions/cozy-orca-ship.ts`.
-3. Restart Pi (or run `/reload`), then start the Cozy Orca app.
+The easy path connects Pi with every other supported agent:
 
-Remove it with `node scripts/install-pi.cjs --remove`.
+```powershell
+npm run connect
+```
+
+Only Pi:
+
+```powershell
+npm run connect -- --only pi
+```
+
+That copies the extension to `~/.pi/agent/extensions/cozy-orca-ship.ts`. Restart Pi (or run `/reload`), then start the Cozy Orca app.
+
+Remove with `npm run connect -- --remove --only pi`.
 
 | Pi event | Ship |
 | --- | --- |

@@ -2,11 +2,13 @@
   "name": "cozy-orca-sailing-companion",
   "productName": "Cozy Orca",
   "version": "1.3.0",
-  "description": "A quiet pixel sailboat that follows Orca's live work status.",
+  "description": "A quiet pixel sailboat that follows Orca, Claude, Codex, Antigravity/agy, and Pi.",
   "private": true,
   "main": "src/main.cjs",
   "scripts": {
     "start": "node scripts/run.cjs",
+    "connect": "node scripts/connect.cjs",
+    "disconnect": "node scripts/connect.cjs --remove",
     "test": "node --test test/*.test.cjs",
     "verify": "node scripts/run.cjs --verify",
     "package": "node scripts/package.cjs"
