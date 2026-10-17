@@ -2,6 +2,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, screen } = require('electron');
 const { OrcaPoller } = require('./poller.cjs');
+const { readAgents } = require('./claude-status.cjs');
 const { VoyageTracker } = require('./voyage.cjs');
 const { placeWindow } = require('./geometry.cjs');
 
@@ -229,7 +230,7 @@ else {
       return;
     }
     show();
-    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || 'orca.exe',
+    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || 'orca.exe', extraAgents: () => readAgents(),
       onStatus(next) { applyVoyage(next); sendDisplay(); } });
     poller.start();
   }).catch(error => { console.error(error); app.exit(1); });

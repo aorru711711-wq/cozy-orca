@@ -1,5 +1,6 @@
 const { execFile } = require('node:child_process');
 const { aggregate, StatusTracker } = require('./status.cjs');
+const { mergeSnapshot } = require('./claude-status.cjs');
 const { TaskSource, unknownTaskProgress } = require('./tasks.cjs');
 
 function cloneProgress(progress) {
@@ -14,9 +15,9 @@ function cloneProgress(progress) {
 class OrcaPoller {
   constructor({
     executable, onStatus, execute = execFile, interval = 2000, timeout = 5000,
-    taskInterval = 10000, now = Date.now, maxBuffer = 16 * 1024 * 1024
+    taskInterval = 10000, now = Date.now, extraAgents = null, maxBuffer = 16 * 1024 * 1024
   }) {
-    Object.assign(this, { executable, onStatus, execute, interval, timeout, taskInterval, now, maxBuffer });
+    Object.assign(this, { executable, onStatus, execute, interval, timeout, taskInterval, now, maxBuffer, extraAgents });
     this.tracker = new StatusTracker();
     this.stopped = true;
     this.child = null;
@@ -59,12 +60,18 @@ class OrcaPoller {
       encoding: 'utf8', shell: false
     }, (error, stdout) => {
       if (this.stopped) return;
-      const snapshot = this.readFleet(error, stdout);
+      const snapshot = this.withExtra(this.readFleet(error, stdout));
       snapshot.taskProgress = cloneProgress(this.taskProgress);
       this.lastRaw = snapshot;
       this.onStatus(this.tracker.update(snapshot));
       this.schedule();
     });
+  }
+
+  withExtra(snapshot) {
+    if (!this.extraAgents) return snapshot;
+    try { return mergeSnapshot(snapshot, this.extraAgents()); }
+    catch { return snapshot; }
   }
 
   readFleet(error, stdout) {
