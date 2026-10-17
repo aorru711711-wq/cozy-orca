@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Orca">
+  <title>Orca</title>
+  <!-- Bold side-view orca: dorsal fin + body + fluke -->
+  <path fill="currentColor" d="M12 2.5 14.8 11h1.7c2.6 0 4.5.7 5.5 1.6.5.4.2 1.2-.4 1.2h-1.1l1.6 2.4c.3.45-.05 1.05-.6.95l-2.5-.4c.05.25.05.5.05.75 0 2.4-3.2 4-7.1 4S4.2 20.4 4.2 18c0-.55.1-1.05.25-1.5H2.8c-.7 0-1-.9-.45-1.35C3.7 14.1 6.3 13 9.8 13h.7L12 2.5z"/>
+</svg>
