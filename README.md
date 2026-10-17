@@ -4,9 +4,11 @@ A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI
 
 ## Showcase
 
-### In use inside Orca
+### Floating on your desktop
 
-![Cozy Orca running in Orca](docs/showcase/in-orca.gif)
+The ship stays on top of whatever you are doing, here floating in the corner while browsing GitHub.
+
+![Cozy Orca floating over a browser window](docs/showcase/in-orca.gif)
 
 
 ### Pixel art
