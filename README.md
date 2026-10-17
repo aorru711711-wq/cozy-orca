@@ -1,4 +1,26 @@
-# Cozy Orca
+<div align="center">
+
+# ⛵ Cozy Orca
+
+**A quiet pixel sailboat that follows your AI agents' work.**
+
+<img src="docs/showcase/tour.gif" alt="Cozy Orca tour: sailing, crew growth, night, resting, storm" width="576">
+
+<br>
+
+![Platform: Windows](https://img.shields.io/badge/platform-Windows-5b8dd6?style=flat-square)
+![Orca plugin](https://img.shields.io/badge/Orca-plugin-8a6fd1?style=flat-square)
+![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-MCP-d98a5b?style=flat-square)
+![Electron](https://img.shields.io/badge/Electron-44-47848f?style=flat-square)
+![Pixel art](https://img.shields.io/badge/pixel%20art-144%C3%9772-f2b8a2?style=flat-square)
+
+[Download](#download-the-windows-app) · [Showcase](#showcase) · [Orca plugin](#orca-plugin-sidebar-ship-icon) · [Claude Desktop](docs/claude-desktop.md)
+
+</div>
+
+---
+
+One ship, many moods: sails up while agents work, a bigger ship with more crew, lanterns at night, furled sails when resting, and rain when something fails.
 
 A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI. The original dusk artwork uses a 144 × 72 pixel canvas, displayed at 2× by default.
 
