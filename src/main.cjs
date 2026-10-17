@@ -23,11 +23,13 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 const settingsFile = path.join(dataDir, 'settings.json');
 const voyageFile = path.join(dataDir, 'voyage.json');
 const VOYAGE_SAVE_MS = 15000;
-let settings = { scale: 2, reducedMotion: false, showText: true, position: null };
+const OPACITIES = [1, 0.8, 0.6, 0.4];
+let settings = { scale: 2, reducedMotion: false, showText: true, opacity: 1, position: null };
 try {
   const saved = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
   settings = { scale: [2, 3, 4].includes(saved.scale) ? saved.scale : 2,
-    reducedMotion: saved.reducedMotion === true, showText: saved.showText !== false, position: saved.position || null };
+    reducedMotion: saved.reducedMotion === true, showText: saved.showText !== false,
+    opacity: OPACITIES.includes(saved.opacity) ? saved.opacity : 1, position: saved.position || null };
 } catch { /* Missing or damaged settings fall back to safe defaults. */ }
 let win, tray, poller, saveTimer, voyageTimer;
 let voyageDirty = false;
@@ -166,6 +168,9 @@ function menuTemplate() {
     { label: win.isVisible() ? 'Hide companion' : 'Show companion', click: () => win.isVisible() ? win.hide() : show() },
     { label: 'Size', submenu: [2, 3, 4].map(scale => ({ label: `${scale}× · ${144 * scale} × ${72 * scale}`,
       type: 'radio', checked: settings.scale === scale, click() { settings.scale = scale; position(); } })) },
+    { label: 'Opacity', submenu: OPACITIES.map(value => ({ label: `${Math.round(value * 100)}%`,
+      type: 'radio', checked: settings.opacity === value,
+      click() { settings.opacity = value; persist(); win.setOpacity(value); } })) },
     { label: 'Reduced motion', type: 'checkbox', checked: settings.reducedMotion,
       click(item) { settings.reducedMotion = item.checked; persist(); sendDisplay(); } },
     { label: 'Show status text', type: 'checkbox', checked: settings.showText,
@@ -211,6 +216,7 @@ else {
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
         nodeIntegration: false, sandbox: true, devTools: VERIFY } });
     win.setMenu(null);
+    win.setOpacity(settings.opacity);
     // A borderless Windows drag region gets native non-client right-clicks,
     // rather than DOM contextmenu events. Without a thick frame Windows does
     // not consistently raise Electron's system-context-menu event.
