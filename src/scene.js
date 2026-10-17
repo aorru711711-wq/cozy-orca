@@ -11,32 +11,38 @@
     sail: '#f4dfb7', sailShade: '#d5bc9b', mast: '#695060', light: '#ffe2a5',
     flag: '#c4453c', flare: '#fff1c9', gold: '#fff6d2', buoy: '#e07a3a',
     crate: '#8a5a3c', badge: '#241e30', wake: '#b1a0ae', digit: '#f6edd8',
-    stormSky: '#403c50', nightSky: '#3c3450', moon: '#efe6d4', clock: '#3a3348',
+    stormSky: '#363248', nightSky: '#3c3450', moon: '#efe6d4', clock: '#3a3348',
     passing: '#f2d27a', groupHat: '#efe6d2',
     hats: ['#d4524a', '#e6c15a', '#6ea36a', '#d4893c', '#6a90c4', '#d7a0b0', '#8fd0c4', '#3d8fd4']
   };
   const NIGHT_SKY = ['#3c3450', '#4c4060', '#5e4c68', '#705872', '#82667c', '#947888'];
   const NIGHT_SEA = ['#6d6788', '#5a5678', '#484666', '#3a3854', '#2e2c44', '#262338'];
-  const STORM_SKY = ['#403c50', '#4c485c', '#5a586c', '#6a687c', '#7a7a8a', '#8a8a96'];
+  // Slightly dimmer than the old storm bands so rain reads against a heavier sky.
+  const STORM_SKY = ['#363248', '#424058', '#504e64', '#5e5c70', '#6c6c7c', '#7a7a88'];
   const STORM_SEA = ['#72768a', '#5e6276', '#4c5064', '#3c4054', '#303244', '#262838'];
-  // Fixed lanes. Position comes from the 12 fps frame clock, never from Math.random.
+  // Fixed lanes of short thin streaks. Position comes from the 12 fps frame clock, never Math.random.
   const RAIN_BACK = [
-    { x: 6, len: 4, phase: 7 },
-    { x: 24, len: 3, phase: 16 },
-    { x: 48, len: 5, phase: 3 },
-    { x: 72, len: 4, phase: 21 },
-    { x: 100, len: 3, phase: 11 },
-    { x: 128, len: 4, phase: 27 }
+    { x: 6, len: 3, phase: 7 },
+    { x: 20, len: 2, phase: 19 },
+    { x: 34, len: 3, phase: 12 },
+    { x: 48, len: 2, phase: 3 },
+    { x: 64, len: 3, phase: 25 },
+    { x: 80, len: 2, phase: 15 },
+    { x: 96, len: 3, phase: 8 },
+    { x: 112, len: 2, phase: 22 },
+    { x: 128, len: 3, phase: 5 }
   ];
   const RAIN_FRONT = [
-    { x: 16, len: 4, phase: 2 },
-    { x: 36, len: 5, phase: 9 },
-    { x: 52, len: 3, phase: 14 },
-    { x: 64, len: 4, phase: 5 },
-    { x: 80, len: 5, phase: 11 },
-    { x: 96, len: 4, phase: 1 },
-    { x: 112, len: 3, phase: 7 },
-    { x: 136, len: 4, phase: 13 }
+    { x: 12, len: 3, phase: 2 },
+    { x: 26, len: 2, phase: 17 },
+    { x: 40, len: 3, phase: 9 },
+    { x: 54, len: 2, phase: 14 },
+    { x: 68, len: 3, phase: 5 },
+    { x: 82, len: 2, phase: 20 },
+    { x: 96, len: 3, phase: 11 },
+    { x: 110, len: 2, phase: 1 },
+    { x: 124, len: 3, phase: 7 },
+    { x: 136, len: 2, phase: 13 }
   ];
   // 3×5 bitmaps. '%' is corner dots + slash — not the Z-shaped 111/001/010/100/111 trap.
   const GLYPHS = {
@@ -215,24 +221,25 @@
         const drop = drops[n];
         const step = (drop.phase + frame) % period;
         if (step >= fallFrames) {
-          const hit = drop.x + 7;
+          // Tiny splash where the short streak meets the water.
+          const hit = drop.x + drop.len - 1;
           ctx.globalAlpha = alpha;
           if (step === fallFrames) {
             fill(hit, 35, 1, 1, color);
-            fill(hit + 2, 35, 1, 1, color);
           } else {
             fill(hit - 1, 36, 1, 1, color);
             fill(hit + 1, 36, 1, 1, color);
-            fill(hit + 3, 36, 1, 1, color);
           }
           ctx.globalAlpha = 1;
           continue;
         }
         const bottom = Math.min(35, (step + 1) * speed);
         ctx.globalAlpha = alpha;
+        // One pixel right per step down so short streaks read as wind-slanted dashes.
         for (let i = 0; i < drop.len; i++) {
           const sy = bottom - drop.len + 1 + i;
-          fill(drop.x + Math.floor(sy / 5), sy, 1, 1, color);
+          if (sy < 1 || sy > 35) continue;
+          fill(drop.x + i, sy, 1, 1, color);
         }
         ctx.globalAlpha = 1;
       }
@@ -333,10 +340,10 @@
       }
     }
     if (view.hasError) {
-      fill(40, 7, 18, 2, '#3e3a50');
-      fill(44, 6, 9, 1, '#3e3a50');
-      fill(86, 5, 16, 2, '#3a3648');
-      fill(90, 4, 7, 1, '#3a3648');
+      fill(40, 7, 18, 2, '#322e42');
+      fill(44, 6, 9, 1, '#322e42');
+      fill(86, 5, 16, 2, '#2e2a3c');
+      fill(90, 4, 7, 1, '#2e2a3c');
     }
     if (root.CozyBirds && typeof root.CozyBirds.draw === 'function') {
       root.CozyBirds.draw(ctx, {
@@ -459,7 +466,7 @@
     }
     paintWaves();
     paintLight();
-    paintRain(RAIN_BACK, 1, '#8494a6', 0.4);
+    paintRain(RAIN_BACK, 1, '#7e8e9e', 0.36);
 
     const age = view.completionAt > 0 && view.completionSerial > 0 ? Date.now() - view.completionAt : null;
     const celebrating = age != null && age >= 0 && age < SPARK_MS;
@@ -762,7 +769,7 @@
         reducedMotion: view.reducedMotion
       });
     }
-    paintRain(RAIN_FRONT, 2, '#c5d2de', 0.72);
+    paintRain(RAIN_FRONT, 2, '#b4c2ce', 0.62);
     fill(0, 0, 144, 1, '#b59bad');
     fill(0, 71, 144, 1, '#252338');
   }

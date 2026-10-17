@@ -301,15 +301,24 @@ test('storm rain falls along a fixed lane and stays still when motion is reduced
   const first = paint(storm, 0);
   const next = paint(storm, 1 / 12);
   const skyTop = first.pixel(2, 5);
-  const skyMid = first.pixel(2, 9);
+  const skyAt6 = first.pixel(2, 6);
   assert.deepEqual(skyTop, parse(palette.stormSky));
-  assert.notDeepEqual(first.pixel(7, 5), skyTop);
-  assert.deepEqual(next.pixel(7, 5), skyTop);
-  assert.deepEqual(first.pixel(7, 9), skyMid);
-  assert.notDeepEqual(next.pixel(7, 9), skyMid);
+  // Dimmer storm sky than the pre-task band (#403c50).
+  assert.ok(skyTop[0] + skyTop[1] + skyTop[2] < 0x40 + 0x3c + 0x50);
+  // Short slanted back-lane streak at t=0: (6,6) → (7,7) → (8,8).
+  assert.notDeepEqual(first.pixel(6, 6), skyAt6);
+  assert.notDeepEqual(first.pixel(7, 7), first.pixel(2, 7));
+  assert.notDeepEqual(first.pixel(8, 8), first.pixel(2, 8));
+  assert.deepEqual(first.pixel(7, 6), skyAt6);
+  // One frame later the dash advances; the old head clears and a lower tip appears.
+  assert.deepEqual(next.pixel(6, 6), skyAt6);
+  assert.notDeepEqual(next.pixel(8, 9), first.pixel(2, 9));
   const stillA = paint({ ...storm, reducedMotion: true }, 0);
   const stillB = paint({ ...storm, reducedMotion: true }, 3);
   assert.equal(stillA.signature(), stillB.signature());
+  // Tiny splash on the water for the back lane (phase 7, speed 1 → first splash frame 29).
+  const splash = paint(storm, 29 / 12);
+  assert.notDeepEqual(splash.pixel(8, 35), splash.pixel(2, 35));
   for (let step = 0; step < 48; step++) paint(storm, step / 12);
   assert.equal(first.count('#ffffff'), 0);
   assert.equal(first.count('#c5ced8'), 0);
