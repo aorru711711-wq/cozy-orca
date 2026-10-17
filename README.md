@@ -82,7 +82,7 @@ npm run package
 
 All app-managed data stays. Dependencies and caches live in this project; the portable app's `data` and `.tmp` folders live beside its executable. The launch script sets temporary storage before Electron starts. Do not move the application to C:.
 
-The default CLI is `E:\Applications\Orca\resources\bin\orca.exe`. To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
+The default CLI is `orca.exe` (found on your PATH). To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
 
 Artwork and palette: `src/scene.js`. Status aggregation: `src/status.cjs`. Task inventory: `src/tasks.cjs`. Window, tray, and settings: `src/main.cjs`. The renderer receives only display status, never prompts, task specs, or raw outcomes.
 

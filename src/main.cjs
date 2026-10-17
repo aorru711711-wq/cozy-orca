@@ -229,7 +229,7 @@ else {
       return;
     }
     show();
-    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || 'E:\\Applications\\Orca\\resources\\bin\\orca.exe',
+    poller = new OrcaPoller({ executable: process.env.COZY_ORCA_CLI || 'orca.exe',
       onStatus(next) { applyVoyage(next); sendDisplay(); } });
     poller.start();
   }).catch(error => { console.error(error); app.exit(1); });
