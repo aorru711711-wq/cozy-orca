@@ -38,6 +38,7 @@
     { x: 112, len: 3, phase: 7 },
     { x: 136, len: 4, phase: 13 }
   ];
+  // 3×5 bitmaps. '%' is corner dots + slash — not the Z-shaped 111/001/010/100/111 trap.
   const GLYPHS = {
     0: ['111', '101', '101', '101', '111'],
     1: ['110', '010', '010', '010', '111'],
@@ -48,8 +49,12 @@
     6: ['111', '100', '111', '101', '111'],
     7: ['111', '001', '010', '010', '010'],
     8: ['111', '101', '111', '101', '111'],
-    9: ['111', '101', '111', '001', '111']
+    9: ['111', '101', '111', '001', '111'],
+    '%': ['101', '001', '010', '100', '101']
   };
+  // Glyph body is 3px; step 5 leaves a 2px gap so multi-digit badges stay readable.
+  const GLYPH_W = 3;
+  const GLYPH_STEP = 5;
   // Eight non-overlapping berths. Overflow clusters at the stern instead of adding a ninth pose.
   const SAILORS = [
     { dx: 1, dy: 0, hat: palette.hats[0], shirt: '#3e6f86' },
@@ -189,9 +194,16 @@
         for (let gx = 0; gx < rows[gy].length; gx++) if (rows[gy][gx] === '1') fill(x + gx, y + gy, 1, 1, color);
       }
     }
-    function counter(text, x, y) {
-      fill(x - 1, y - 1, text.length * 4 + 1, 7, palette.badge);
-      for (let i = 0; i < text.length; i++) glyph(text[i], x + i * 4, y, palette.digit);
+    function measure(text) {
+      if (!text.length) return 0;
+      return text.length * GLYPH_STEP - (GLYPH_STEP - GLYPH_W);
+    }
+    // align 'right' keeps large completed counts over the crate raft; left suits remaining.
+    function counter(text, x, y, align) {
+      const width = measure(text);
+      const left = align === 'right' ? x - width : x;
+      fill(left - 1, y - 1, width + 2, 7, palette.badge);
+      for (let i = 0; i < text.length; i++) glyph(text[i], left + i * GLYPH_STEP, y, palette.digit);
     }
     function paintRain(drops, speed, color, alpha) {
       if (!view.hasError) return;
@@ -462,7 +474,7 @@
       fill(bx, 34, 3, 1, '#f0e2c4');
       fill(bx, 35, 3, 2, palette.passing);
     }
-    if (view.remaining != null && view.remaining > buoySpots.length) counter(String(view.remaining), 8, 26);
+    if (view.remaining != null && view.remaining > buoySpots.length) counter(String(view.remaining), 8, 26, 'left');
 
     // ---------- Ship ----------
     // The hull is anchored: x and y never change, only cloth, flags and water move.
@@ -709,7 +721,7 @@
       fill(left + 2, top, 1, height, '#6b4330');
       fill(left, top + 2, 5, 1, '#6b4330');
     }
-    if (view.completed != null && view.completed > crateSlots) counter(String(view.completed), 104, 56);
+    if (view.completed != null && view.completed > crateSlots) counter(String(view.completed), 116, 56, 'right');
 
     if (celebrating) {
       const newest = Math.max(0, crates - 1);
@@ -726,7 +738,7 @@
 
     if (view.crewCount != null) {
       const text = String(view.crewCount);
-      fill(2, 2, 12 + text.length * 4, 9, palette.badge);
+      fill(2, 2, 11 + text.length * GLYPH_STEP, 9, palette.badge);
       fill(5, 3, 3, 1, '#f0d7b4');
       fill(6, 4, 1, 2, '#f0d7b4');
       fill(4, 6, 5, 1, '#f0d7b4');
@@ -734,7 +746,7 @@
       fill(6, 8, 1, 1, '#f0d7b4');
       fill(5, 9, 1, 1, '#f0d7b4');
       fill(7, 9, 1, 1, '#f0d7b4');
-      for (let i = 0; i < text.length; i++) glyph(text[i], 11 + i * 4, 4, palette.digit);
+      for (let i = 0; i < text.length; i++) glyph(text[i], 11 + i * GLYPH_STEP, 4, palette.digit);
     }
 
     if (root.CozySparkles && typeof root.CozySparkles.draw === 'function') {
@@ -750,5 +762,5 @@
     fill(0, 71, 144, 1, '#252338');
   }
 
-  root.CozyScene = { draw, palette };
+  root.CozyScene = { draw, palette, GLYPHS };
 })(typeof window === 'undefined' ? globalThis : window);

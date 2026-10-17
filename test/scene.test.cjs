@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 
 require('../src/scene.js');
-const { draw, palette } = globalThis.CozyScene;
+const { draw, palette, GLYPHS: SCENE_GLYPHS } = globalThis.CozyScene;
 
 const DAY_MS = 900000;
 const SPARK_MS = 1800;
@@ -98,17 +98,11 @@ function air(a, b) {
 function same(hex, pixel) {
   assert.deepEqual(pixel, parse(hex));
 }
-const GLYPHS = {
-  0: ['111', '101', '101', '101', '111'],
-  1: ['110', '010', '010', '010', '111'],
-  2: ['111', '001', '111', '100', '111'],
-  8: ['111', '101', '111', '101', '111'],
-  9: ['111', '101', '111', '001', '111']
-};
 function expectGlyph(canvas, digit, x, y) {
-  const rows = GLYPHS[digit];
+  const rows = SCENE_GLYPHS[digit];
+  assert.ok(rows, `missing glyph ${digit}`);
   for (let gy = 0; gy < rows.length; gy++) {
-    for (let gx = 0; gx < 3; gx++) {
+    for (let gx = 0; gx < rows[gy].length; gx++) {
       if (rows[gy][gx] !== '1') continue;
       same(palette.digit, canvas.pixel(x + gx, y + gy));
     }
@@ -192,7 +186,7 @@ test('crew past eight groups at the stern and the anchor badge keeps the exact c
   assert.ok(air(stern, group) <= 8);
   assert.ok(air(twelve.bounds(palette.hats[6]), group) > 8);
   expectGlyph(twelve, 1, 11, 4);
-  expectGlyph(twelve, 2, 15, 4);
+  expectGlyph(twelve, 2, 16, 4);
   assert.equal(paint({ kind: 'working', reducedMotion: true }).count(palette.badge), 0);
   assert.ok(paint({ kind: 'idle', crewCount: 0, reducedMotion: true }).count(palette.badge) > 0);
   expectGlyph(paint({ kind: 'idle', crewCount: 0, reducedMotion: true }), 0, 11, 4);
@@ -226,8 +220,9 @@ test('crates, buoys, and exact counters distinguish progress without inventing a
   assert.equal(full.count(palette.buoy), over.count(palette.buoy));
   assert.equal(full.count(palette.digit), 0);
   assert.ok(over.count(palette.digit) > 0);
-  expectGlyph(over, 1, 104, 56);
-  expectGlyph(over, 0, 108, 56);
+  // completed "10" is right-aligned to x=116 with step 5 → glyphs at 108 and 113
+  expectGlyph(over, 1, 108, 56);
+  expectGlyph(over, 0, 113, 56);
   expectGlyph(over, 9, 8, 26);
   const derived = paint({ kind: 'working', totalCount: 10, completedCount: 7, reducedMotion: true });
   const buoys = paint({ kind: 'working', remainingCount: 3, reducedMotion: true });
@@ -318,4 +313,41 @@ test('storm rain falls along a fixed lane and stays still when motion is reduced
   for (let step = 0; step < 48; step++) paint(storm, step / 12);
   assert.equal(first.count('#ffffff'), 0);
   assert.equal(first.count('#c5ced8'), 0);
+});
+
+test('percent glyph exists and is not Z-shaped', () => {
+  const percent = SCENE_GLYPHS['%'];
+  assert.ok(Array.isArray(percent));
+  assert.deepEqual(percent, ['101', '001', '010', '100', '101']);
+  const zShaped = ['111', '001', '010', '100', '111'];
+  assert.notDeepEqual(percent, zShaped);
+  assert.notDeepEqual(percent, SCENE_GLYPHS['2']);
+  assert.equal(percent[0].length, 3);
+  assert.equal(percent.length, 5);
+});
+
+test('progress badges stay readable for small and large voyage counts', () => {
+  const small = paint({ kind: 'working', completedCount: 7, remainingCount: 7, reducedMotion: true });
+  const large = paint({ kind: 'working', completedCount: 100, remainingCount: 99, reducedMotion: true });
+  // single-digit completed "7" right-aligned to 116 → glyph at 113
+  expectGlyph(small, 7, 113, 56);
+  expectGlyph(small, 7, 8, 26);
+  // "100" width 13, left at 103; "99" left-aligned at 8 with step 5
+  expectGlyph(large, 1, 103, 56);
+  expectGlyph(large, 0, 108, 56);
+  expectGlyph(large, 0, 113, 56);
+  expectGlyph(large, 9, 8, 26);
+  expectGlyph(large, 9, 13, 26);
+  const smallDone = small.bounds(palette.digit);
+  const largeDone = large.bounds(palette.digit);
+  assert.ok(smallDone.maxX <= 115);
+  assert.ok(largeDone.maxX <= 115);
+  assert.equal(smallDone.maxX, largeDone.maxX);
+  const crewWide = paint({ kind: 'idle', crewCount: 100, reducedMotion: true });
+  expectGlyph(crewWide, 1, 11, 4);
+  expectGlyph(crewWide, 0, 16, 4);
+  expectGlyph(crewWide, 0, 21, 4);
+  const remainingBadge = { minX: 7, maxX: 8 + 8, minY: 25, maxY: 32 };
+  const completedBadge = { minX: 102, maxX: 117, minY: 55, maxY: 62 };
+  assert.ok(air(remainingBadge, completedBadge) > 40);
 });
