@@ -4,6 +4,16 @@ A quiet pixel sailboat that follows all agent work exposed by the local Orca CLI
 
 ## Showcase
 
+![Cozy Orca tour: sailing, crew growth, night, resting, storm](docs/showcase/tour.gif)
+
+| Sailing | Night | Storm |
+| --- | --- | --- |
+| ![Sailing at sunset](docs/showcase/sailing.gif) | ![Moonlit night](docs/showcase/night.gif) | ![Storm](docs/showcase/storm.gif) |
+
+Regenerate the GIFs with `node scripts/render-gif.cjs docs/showcase/tour.gif day1,day3,night8,idle2,storm5 3 4`. No extra dependencies are needed.
+
+Stills:
+
 ![Cozy Orca scenes: sailing at sunset, a multi-masted ship, night, resting, storm](docs/showcase/all.png)
 
 | Scene | What you see |
