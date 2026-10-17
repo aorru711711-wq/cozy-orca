@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const root = path.resolve(__dirname, '..');
-process.env.TEMP = process.env.TMP = path.join(root, '.tmp', 'pack-build');
+process.env.TEMP = process.env.TMP = path.join(root, '.tmp', 'pack-build', String(process.pid));
 process.env.ELECTRON_CACHE = path.join(root, '.cache', 'electron');
 process.env.electron_config_cache = process.env.ELECTRON_CACHE;
 fs.mkdirSync(process.env.TEMP, { recursive: true });

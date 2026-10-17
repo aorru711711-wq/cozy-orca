@@ -33,9 +33,13 @@ Stills:
 
 Regenerate the images with `node scripts/render-showcase.cjs docs/showcase/all.png day1,day3,night8,idle2,storm5 3`.
 
-## Launch the portable Windows app
+## Download the Windows app
 
-Keep the portable `Cozy Orca-win32-x64` folder wherever you like. The current package is `dist/v1.1.0/Cozy Orca-win32-x64`. Double-click **Launch Cozy Orca.cmd** inside that folder. No installation or administrator access is needed. Orca must already be running for live status; the companion reconnects automatically.
+This git repository does not contain the portable app. `Cozy Orca.exe` is larger than GitHub allows in a repository, so a clone or a source zip will not include it.
+
+Download [Cozy Orca 1.2.0 for Windows](https://github.com/aorru711711-wq/cozy-orca/releases/download/v1.2.0/Cozy-Orca-1.2.0-win-x64.zip) and unzip it on any drive. Double-click **Launch Cozy Orca.cmd** inside `Cozy Orca-win32-x64`. No installation or administrator access is needed. Orca must already be running for live status, and `orca.exe` must be on your PATH. The companion reconnects automatically. To use a specific Orca executable, set `COZY_ORCA_CLI` to that native path before launching. `.cmd` wrappers are not accepted.
+
+Settings and temporary files are created in `data` and `.tmp` beside the executable. Keep those folders with the app when you move it.
 
 - Drag the scene to move it. It starts above the taskbar in the bottom-right corner.
 - Hover to reveal the **···** settings button. Right-click also opens settings.
@@ -78,9 +82,9 @@ npm start
 npm run package
 ```
 
-`npm run verify` runs Electron smoke checks, captures the voyage fixtures and a contact sheet into `artifacts`, and checks the installed Orca CLI, including its task inventory. It uses separate verification settings. `npm run package` writes `dist/v1.1.0/Cozy Orca-win32-x64`. That folder follows the package version, so an earlier portable app and the user data beside it stay in place.
+`npm run verify` runs Electron smoke checks, captures the voyage fixtures and a contact sheet into `artifacts`, and checks the installed Orca CLI, including its task inventory. It uses separate verification settings. `npm run package` writes `dist/v1.2.0/Cozy Orca-win32-x64`. That folder follows the package version, so an earlier portable app and the user data beside it stay in place.
 
-All app-managed data stays. Dependencies and caches live in this project; the portable app's `data` and `.tmp` folders live beside its executable. The launch script sets temporary storage before Electron starts. Do not move the application to C:.
+All app-managed data stays with the app. Development dependencies and caches live in this project. The portable folder can sit on any drive; its `data` and `.tmp` folders live beside the executable. The launch script sets temporary storage before Electron starts.
 
 The default CLI is `orca.exe` (found on your PATH). To override it, set `COZY_ORCA_CLI` to a native Orca executable path before launching; `.cmd` wrappers are deliberately not executed through a shell. `COZY_DATA_DIR` can select another data folder.
 
@@ -112,7 +116,7 @@ Limits:
 
 ## Orca plugin (sidebar ship icon)
 
-This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar; click it to show or hide a live cozy ship scene inside Orca. The panel has no network or process access and no capabilities.
+This repo is also an Orca plugin (`orca-plugin.json`). It adds a sailboat icon to Orca's sidebar. Click it to show or hide the pixel scene. The panel only draws that scene: the buttons change the picture, and it does not read agent status. The portable Windows app is the one that follows live work. The panel has no network or process access and no capabilities.
 
 1. In Orca, enable the plugin system in settings (it is off by default).
 2. Install `https://github.com/aorru711711-wq/cozy-orca`, or for local development add this folder to `devPluginPaths`.
